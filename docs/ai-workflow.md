@@ -38,9 +38,11 @@ flowchart TD
 - **CI failure after push:** `claude-ci-fix.yml` tries up to 3 times (change with repository variable `CLAUDE_MAX_CI_FIX_ATTEMPTS`). Attempts are counted from marker comments on the PR. After the limit the PR gets the `needs-human` label.
 
 ## One-time setup
-1. **`ANTHROPIC_API_KEY`** – repository secret (Settings → Secrets and variables → Actions).
-   To use a Claude subscription instead, run `claude setup-token`, store it as `CLAUDE_CODE_OAUTH_TOKEN`,
-   and replace `anthropic_api_key:` with `claude_code_oauth_token:` in both Claude workflows.
+1. **Claude credentials** – one repository secret (Settings → Secrets and variables → Actions):
+   - Claude Pro/Max subscription: run `claude setup-token` locally and store the output as
+     `CLAUDE_CODE_OAUTH_TOKEN`. Usage counts against your subscription's limits.
+   - Or pay-as-you-go API: create a key at console.anthropic.com and store it as `ANTHROPIC_API_KEY`.
+   Both workflows accept either secret; set only one.
 2. **`GH_BOT_TOKEN`** – fine-grained personal access token (or GitHub App token) for this repo with
    *Contents*, *Pull requests*, *Issues*: read & write, and *Actions*: read.
    **Required for the CI retry loop:** pushes made with the default `GITHUB_TOKEN` do not trigger CI,
