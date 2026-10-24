@@ -1,0 +1,107 @@
+name: Claude – fix CI failure
+
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+  actions: read
+  id-token: write
+
+concurrency:
+  group: claude-ci-fix-${{ github.event.workflow_run.head_branch }}
+  cancel-in-progress: false
+
+env:
+  GH_TOKEN: ${{ secrets.GH_BOT_TOKEN || github.token }}
+  BRANCH: ${{ github.event.workflow_run.head_branch }}
+  FAILED_RUN_ID: ${{ github.event.workflow_run.id }}
+  MAX_ATTEMPTS: ${{ vars.CLAUDE_MAX_CI_FIX_ATTEMPTS || 3 }}
+  MARKER: "<!-- claude-ci-fix-attempt -->"
+
+jobs:
+  fix:
+    # Only failed runs on the agent's own branches in this repository (never forks).
+    if: >-
+      github.event.workflow_run.conclusion == 'failure' &&
+      startsWith(github.event.workflow_run.head_branch, 'claude/') &&
+      github.event.workflow_run.head_repository.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Find PR and count previous attempts
+        id: pr
+        run: |
+          pr=$(gh pr list -R "$GITHUB_REPOSITORY" --head "$BRANCH" --state open --json number -q '.[0].number')
+          if [ -z "$pr" ]; then echo "No open PR for $BRANCH"; echo "skip=true" >> "$GITHUB_OUTPUT"; exit 0; fi
+          attempts=$(gh api "repos/$GITHUB_REPOSITORY/issues/$pr/comments" --paginate \
+            --jq "[.[] | select(.body | contains(\"$MARKER\"))] | length" | awk '{s+=$1} END {print s+0}')
+          echo "number=$pr" >> "$GITHUB_OUTPUT"
+          echo "attempt=$((attempts + 1))" >> "$GITHUB_OUTPUT"
+          if [ "$attempts" -ge "$MAX_ATTEMPTS" ]; then
+            gh label create needs-human -R "$GITHUB_REPOSITORY" --color D93F0B \
+              --description "Agent gave up; a human should look" --force
+            gh pr edit "$pr" -R "$GITHUB_REPOSITORY" --add-label needs-human
+            gh pr comment "$pr" -R "$GITHUB_REPOSITORY" --body \
+              "CI is still failing after $attempts automatic fix attempts. Stopping; labelled \`needs-human\`."
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/checkout@v4
+        if: steps.pr.outputs.skip == 'false'
+        with:
+          ref: ${{ env.BRANCH }}
+          fetch-depth: 0
+          token: ${{ env.GH_TOKEN }}
+
+      - name: Record attempt and collect failure logs
+        if: steps.pr.outputs.skip == 'false'
+        run: |
+          gh pr comment "${{ steps.pr.outputs.number }}" --body \
+            "$MARKER Automatic CI fix attempt ${{ steps.pr.outputs.attempt }}/$MAX_ATTEMPTS for run $FAILED_RUN_ID."
+          mkdir -p "$RUNNER_TEMP/ci"
+          gh run view "$FAILED_RUN_ID" --log-failed | tail -c 60000 > "$RUNNER_TEMP/ci/failed.log" || true
+
+      - uses: actions/setup-python@v5
+        if: steps.pr.outputs.skip == 'false'
+        with:
+          python-version: "3.12"
+      - if: steps.pr.outputs.skip == 'false'
+        run: |
+          pip install -e '.[dev]'
+          git config user.name  "claude-agent[bot]"
+          git config user.email "claude-agent[bot]@users.noreply.github.com"
+
+      - name: Run agent
+        if: steps.pr.outputs.skip == 'false'
+        uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          github_token: ${{ env.GH_TOKEN }}
+          claude_args: >-
+            --max-turns 80
+            --add-dir ${{ runner.temp }}/ci
+            --allowedTools "Agent,Task,Read,Write,Edit,Glob,Grep,TodoWrite,Bash(git:*),Bash(gh:*),Bash(pytest:*),Bash(ruff:*),Bash(python:*),Bash(pip:*),Bash(ls:*),Bash(cat:*)"
+          prompt: |
+            CI failed on branch `${{ env.BRANCH }}` (PR #${{ steps.pr.outputs.number }}).
+            This is automatic fix attempt ${{ steps.pr.outputs.attempt }} of ${{ env.MAX_ATTEMPTS }}.
+            Follow CLAUDE.md.
+
+            1. Read the failure log at `${{ runner.temp }}/ci/failed.log` and the PR with
+               `gh pr view ${{ steps.pr.outputs.number }} --comments` (it links the issue).
+               Reproduce locally with `ruff check . && ruff format --check . && pytest -q`.
+               Note CI runs Python 3.11, 3.12 and 3.13; the runner here has 3.12.
+            2. Decide which side is wrong. Do not edit files yourself:
+               - production code bug -> `implementer`
+               - wrong or flaky test -> `test-writer` (never just delete or weaken a correct test)
+            3. Verify locally until all checks pass (up to 3 rounds).
+            4. Ask `reviewer` to check the fix. Address BLOCKING items (1 round).
+            5. Commit (`fix CI: <summary>`) and `git push`. Do not force-push.
+            6. Comment on the PR: cause of the failure and what changed.
+               If you could not find a fix, say so and stop without pushing.
