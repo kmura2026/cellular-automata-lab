@@ -25,7 +25,7 @@ flowchart TD
 | File | Role |
 |---|---|
 | `.github/workflows/claude-issue.yml` | Runs on new issues, or manually (Actions → *Claude – handle issue* → enter issue number). |
-| `.github/workflows/ci.yml` | Lint (ruff) and tests (pytest) on Python 3.11–3.13. |
+| `.github/workflows/ci.yml` | Lint (biome), typecheck (tsc) and tests (vitest) on Node. |
 | `.github/workflows/claude-ci-fix.yml` | When CI fails on a `claude/*` branch, the agent reads the log and pushes a fix. |
 | `.claude/agents/implementer.md` | Subagent: edits production code only. |
 | `.claude/agents/test-writer.md` | Subagent: edits tests only. |

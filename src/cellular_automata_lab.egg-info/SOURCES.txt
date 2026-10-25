@@ -1,0 +1,10 @@
+README.md
+pyproject.toml
+src/cellular_automata_lab/__init__.py
+src/cellular_automata_lab/elementary.py
+src/cellular_automata_lab.egg-info/PKG-INFO
+src/cellular_automata_lab.egg-info/SOURCES.txt
+src/cellular_automata_lab.egg-info/dependency_links.txt
+src/cellular_automata_lab.egg-info/requires.txt
+src/cellular_automata_lab.egg-info/top_level.txt
+tests/test_elementary.py
