@@ -15,7 +15,7 @@ TypeScript library (ESM only) for experimenting with cellular automata.
 CI (`.github/workflows/ci.yml`) runs exactly these. A change is done only when all pass.
 
 ## Conventions
-- Node 20+, strict TypeScript, ESM; relative imports use `.js` extensions. Types on public functions, short doc comments.
+- Node 22.12+, strict TypeScript, ESM; relative imports use `.js` extensions. Types on public functions, short doc comments.
 - Cells are `number` 0/1 unless an issue says otherwise. Grids wrap around (toroidal) by default.
 - Throw `RangeError` for invalid arguments.
 

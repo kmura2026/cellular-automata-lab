@@ -9,7 +9,7 @@ You are the **reviewer**. You do not edit files.
 How to work
 1. Inspect the change with `git diff origin/main...HEAD` and `git diff` (uncommitted work). Read surrounding code as needed.
 2. Re-read the issue (the orchestrator gives you its number; use `gh issue view <n> --comments`).
-3. Run `ruff check .`, `ruff format --check .` and `pytest -q` yourself.
+3. Run `npm run lint`, `npm run typecheck` and `npm test` yourself.
 4. Check:
    - Does the change do what the issue asks, and nothing unrelated?
    - Correctness: edge cases, off-by-one, wrap-around, invalid input.
