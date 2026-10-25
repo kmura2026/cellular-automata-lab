@@ -43,10 +43,16 @@ flowchart TD
      `CLAUDE_CODE_OAUTH_TOKEN`. Usage counts against your subscription's limits.
    - Or pay-as-you-go API: create a key at console.anthropic.com and store it as `ANTHROPIC_API_KEY`.
    Both workflows accept either secret; set only one.
-2. **`GH_BOT_TOKEN`** – fine-grained personal access token (or GitHub App token) for this repo with
-   *Contents*, *Pull requests*, *Issues*: read & write, and *Actions*: read.
-   **Required for the CI retry loop:** pushes made with the default `GITHUB_TOKEN` do not trigger CI,
-   so without this token PRs from the agent get no CI run and no automatic fix.
+2. **GitHub App** – the agent acts as its own app, so PRs, comments and commits show up as
+   `<app>[bot]` instead of as you. Pushes made with an app token also trigger CI and the fix loop
+   (pushes made with the default `GITHUB_TOKEN` would not).
+   1. Create an app at <https://github.com/settings/apps/new>: any name, your repo URL as homepage,
+      webhook *Active* unchecked, "Only on this account". Repository permissions: *Contents*,
+      *Issues*, *Pull requests*: read & write; *Actions*: read.
+   2. On the app's *General* page, note the **App ID** and click *Generate a private key*
+      (downloads a `.pem` file).
+   3. *Install App* → this repository only.
+   4. Add repository secrets `APP_ID` (the number) and `APP_PRIVATE_KEY` (the whole `.pem` file).
 3. Settings → Actions → General → Workflow permissions: allow GitHub Actions to create pull requests.
 4. Recommended: protect `main` (require PR + passing CI) so nothing merges without a human.
 

@@ -25,8 +25,9 @@ agent delegates to three subagents in `.claude/agents/`:
 - `test-writer` – edits `tests/` only
 - `reviewer` – read-only review of the diff
 
-Every comment the agent posts starts with `🤖 **Claude agent**`, because it posts with the
-repository owner's token and would otherwise look like the owner wrote it.
+The agent posts, pushes and opens PRs with a GitHub App token (secrets `APP_ID` and
+`APP_PRIVATE_KEY`), so its work shows up as `<app>[bot]`. Every comment it posts also starts
+with `🤖 **Claude agent**`.
 
 Branches are named `claude/issue-<number>`. Commit messages reference the issue (`#<number>`).
 If CI fails on a `claude/` branch, `.github/workflows/claude-ci-fix.yml` retries automatically
