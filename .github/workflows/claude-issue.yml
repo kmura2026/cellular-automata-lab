@@ -22,6 +22,9 @@ concurrency:
   cancel-in-progress: false
 
 env:
+  # Run subagents in the foreground. In a headless run, Claude Code exits when the
+  # orchestrator ends its turn, which kills any subagent still running in the background.
+  CLAUDE_CODE_DISABLE_BACKGROUND_TASKS: "1"
   # A PAT or GitHub App token is needed so that pushes made by the agent trigger CI.
   # Pushes made with the default GITHUB_TOKEN do not start other workflows.
   GH_TOKEN: ${{ secrets.GH_BOT_TOKEN || github.token }}
@@ -84,6 +87,8 @@ jobs:
             - Start every issue or PR comment you post with `🤖 **Claude agent**` on its own line.
             - Never finish without either opening/updating a PR or posting an issue comment.
               If you are blocked for any reason, comment on the issue explaining why.
+            - Subagents must run in the foreground: wait for each subagent's result before your next
+              step, and never end your turn while a subagent is still running.
             - Ownership is never a reason to stop: `implementer` handles every file outside
               `tests/`, `.github/` and `.claude/`. Only changes to `.github/` or `.claude/`
               need a human; say so in an issue comment.

@@ -17,6 +17,9 @@ concurrency:
   cancel-in-progress: false
 
 env:
+  # Run subagents in the foreground. In a headless run, Claude Code exits when the
+  # orchestrator ends its turn, which kills any subagent still running in the background.
+  CLAUDE_CODE_DISABLE_BACKGROUND_TASKS: "1"
   GH_TOKEN: ${{ secrets.GH_BOT_TOKEN || github.token }}
   BRANCH: ${{ github.event.workflow_run.head_branch }}
   FAILED_RUN_ID: ${{ github.event.workflow_run.id }}
@@ -93,6 +96,8 @@ jobs:
           prompt: |
             CI failed on branch `${{ env.BRANCH }}` (PR #${{ steps.pr.outputs.number }}).
             This is automatic fix attempt ${{ steps.pr.outputs.attempt }} of ${{ env.MAX_ATTEMPTS }}.
+            Run subagents in the foreground and wait for each result; never end your turn while one
+            is still running.
             Follow CLAUDE.md. Start every comment you post with `🤖 **Claude agent**` on its own line.
 
             1. Read the failure log at `${{ runner.temp }}/ci/failed.log` and the PR with
