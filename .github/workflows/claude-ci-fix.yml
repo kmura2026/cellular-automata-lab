@@ -47,7 +47,7 @@ jobs:
               --description "Agent gave up; a human should look" --force
             gh pr edit "$pr" -R "$GITHUB_REPOSITORY" --add-label needs-human
             gh pr comment "$pr" -R "$GITHUB_REPOSITORY" --body \
-              "CI is still failing after $attempts automatic fix attempts. Stopping; labelled \`needs-human\`."
+              "🤖 **Claude agent**: CI is still failing after $attempts automatic fix attempts. Stopping; labelled \`needs-human\`."
             echo "skip=true" >> "$GITHUB_OUTPUT"
           else
             echo "skip=false" >> "$GITHUB_OUTPUT"
@@ -64,7 +64,7 @@ jobs:
         if: steps.pr.outputs.skip == 'false'
         run: |
           gh pr comment "${{ steps.pr.outputs.number }}" --body \
-            "$MARKER Automatic CI fix attempt ${{ steps.pr.outputs.attempt }}/$MAX_ATTEMPTS for run $FAILED_RUN_ID."
+            "$MARKER 🤖 **Claude agent**: automatic CI fix attempt ${{ steps.pr.outputs.attempt }}/$MAX_ATTEMPTS for run $FAILED_RUN_ID."
           mkdir -p "$RUNNER_TEMP/ci"
           gh run view "$FAILED_RUN_ID" --log-failed | tail -c 60000 > "$RUNNER_TEMP/ci/failed.log" || true
 
@@ -85,6 +85,7 @@ jobs:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           github_token: ${{ env.GH_TOKEN }}
+          show_full_output: true
           claude_args: >-
             --max-turns 80
             --add-dir ${{ runner.temp }}/ci
@@ -92,14 +93,14 @@ jobs:
           prompt: |
             CI failed on branch `${{ env.BRANCH }}` (PR #${{ steps.pr.outputs.number }}).
             This is automatic fix attempt ${{ steps.pr.outputs.attempt }} of ${{ env.MAX_ATTEMPTS }}.
-            Follow CLAUDE.md.
+            Follow CLAUDE.md. Start every comment you post with `🤖 **Claude agent**` on its own line.
 
             1. Read the failure log at `${{ runner.temp }}/ci/failed.log` and the PR with
                `gh pr view ${{ steps.pr.outputs.number }} --comments` (it links the issue).
                Reproduce locally with `ruff check . && ruff format --check . && pytest -q`.
                Note CI runs Python 3.11, 3.12 and 3.13; the runner here has 3.12.
             2. Decide which side is wrong. Do not edit files yourself:
-               - production code bug -> `implementer`
+               - anything outside tests/ (src/, README.md, docs/, config) -> `implementer`
                - wrong or flaky test -> `test-writer` (never just delete or weaken a correct test)
             3. Verify locally until all checks pass (up to 3 rounds).
             4. Ask `reviewer` to check the fix. Address BLOCKING items (1 round).

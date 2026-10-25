@@ -21,9 +21,12 @@ CI (`.github/workflows/ci.yml`) runs exactly these. A change is done only when a
 ## AI-driven workflow
 Issues are handled by GitHub Actions (`.github/workflows/claude-issue.yml`). The orchestrating
 agent delegates to three subagents in `.claude/agents/`:
-- `implementer` – edits `src/` only
+- `implementer` – edits everything except `tests/`, `.github/` and `.claude/` (src, README, docs, config)
 - `test-writer` – edits `tests/` only
 - `reviewer` – read-only review of the diff
+
+Every comment the agent posts starts with `🤖 **Claude agent**`, because it posts with the
+repository owner's token and would otherwise look like the owner wrote it.
 
 Branches are named `claude/issue-<number>`. Commit messages reference the issue (`#<number>`).
 If CI fails on a `claude/` branch, `.github/workflows/claude-ci-fix.yml` retries automatically
