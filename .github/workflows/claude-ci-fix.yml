@@ -89,13 +89,14 @@ jobs:
           mkdir -p "$RUNNER_TEMP/ci"
           gh run view "$FAILED_RUN_ID" --log-failed | tail -c 60000 > "$RUNNER_TEMP/ci/failed.log" || true
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-node@v4
         if: steps.pr.outputs.skip == 'false'
         with:
-          python-version: "3.12"
+          node-version: "24"
+          cache: npm
       - if: steps.pr.outputs.skip == 'false'
         run: |
-          pip install -e '.[dev]'
+          npm ci
           git config user.name  "$GIT_BOT_NAME"
           git config user.email "$GIT_BOT_EMAIL"
 
@@ -110,7 +111,7 @@ jobs:
           claude_args: >-
             --max-turns 80
             --add-dir ${{ runner.temp }}/ci
-            --allowedTools "Agent,Task,Read,Write,Edit,Glob,Grep,TodoWrite,Bash(git:*),Bash(gh:*),Bash(pytest:*),Bash(ruff:*),Bash(python:*),Bash(pip:*),Bash(ls:*),Bash(cat:*)"
+            --allowedTools "Agent,Task,Read,Write,Edit,Glob,Grep,TodoWrite,Bash(git:*),Bash(gh:*),Bash(npm:*),Bash(npx:*),Bash(node:*),Bash(ls:*),Bash(cat:*)"
           prompt: |
             CI failed on branch `${{ env.BRANCH }}` (PR #${{ steps.pr.outputs.number }}).
             This is automatic fix attempt ${{ steps.pr.outputs.attempt }} of ${{ env.MAX_ATTEMPTS }}.
@@ -120,8 +121,8 @@ jobs:
 
             1. Read the failure log at `${{ runner.temp }}/ci/failed.log` and the PR with
                `gh pr view ${{ steps.pr.outputs.number }} --comments` (it links the issue).
-               Reproduce locally with `ruff check . && ruff format --check . && pytest -q`.
-               Note CI runs Python 3.11, 3.12 and 3.13; the runner here has 3.12.
+               Reproduce locally with `npm run lint && npm run typecheck && npm test`.
+               Note CI runs Node 22, 24 and 26; the runner here has Node 24.
             2. Decide which side is wrong. Do not edit files yourself:
                - anything outside tests/ (src/, README.md, docs/, config) -> `implementer`
                - wrong or flaky test -> `test-writer` (never just delete or weaken a correct test)

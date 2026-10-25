@@ -1,22 +1,23 @@
 # cellular-automata-lab
 
-Python library for experimenting with cellular automata.
+TypeScript library (ESM only) for experimenting with cellular automata.
 
 ## Layout
-- `src/cellular_automata_lab/` – production code (pure Python, no runtime dependencies unless an issue asks for one)
-- `tests/` – pytest tests, one `test_<module>.py` per module
+- `src/` – production code (no runtime dependencies unless an issue asks for one); `src/index.ts` re-exports the public API
+- `tests/` – vitest tests, one `<module>.test.ts` per module
 
 ## Commands
-- Install: `pip install -e '.[dev]'`
-- Lint: `ruff check . && ruff format --check .`
-- Test: `pytest -q`
+- Install: `npm ci`
+- Lint: `npm run lint`
+- Typecheck: `npm run typecheck`
+- Test: `npm test`
 
 CI (`.github/workflows/ci.yml`) runs exactly these. A change is done only when all pass.
 
 ## Conventions
-- Python 3.11+, type hints on public functions, short docstrings.
-- Cells are `int` 0/1 unless an issue says otherwise. Grids wrap around (toroidal) by default.
-- Raise `ValueError` for invalid arguments.
+- Node 22.12+, strict TypeScript, ESM; relative imports use `.js` extensions. Types on public functions, short doc comments.
+- Cells are `number` 0/1 unless an issue says otherwise. Grids wrap around (toroidal) by default.
+- Throw `RangeError` for invalid arguments.
 
 ## AI-driven workflow
 Issues are handled by GitHub Actions (`.github/workflows/claude-issue.yml`). The orchestrating
