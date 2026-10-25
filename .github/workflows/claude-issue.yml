@@ -25,9 +25,6 @@ env:
   # Run subagents in the foreground. In a headless run, Claude Code exits when the
   # orchestrator ends its turn, which kills any subagent still running in the background.
   CLAUDE_CODE_DISABLE_BACKGROUND_TASKS: "1"
-  # A PAT or GitHub App token is needed so that pushes made by the agent trigger CI.
-  # Pushes made with the default GITHUB_TOKEN do not start other workflows.
-  GH_TOKEN: ${{ secrets.GH_BOT_TOKEN || github.token }}
   ISSUE_NUMBER: ${{ github.event.issue.number || inputs.issue_number }}
 
 jobs:
@@ -40,10 +37,29 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
+      # PRs, comments and pushes all use this GitHub App token, so they show up as <app>[bot].
+      # App-token pushes still trigger CI; pushes made with the default GITHUB_TOKEN would not.
+      - name: Create app token
+        id: app-token
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ secrets.APP_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+
+      - name: Use app token and bot identity
+        env:
+          TOKEN: ${{ steps.app-token.outputs.token }}
+          SLUG: ${{ steps.app-token.outputs.app-slug }}
+        run: |
+          echo "GH_TOKEN=$TOKEN" >> "$GITHUB_ENV"
+          bot_id=$(GH_TOKEN="$TOKEN" gh api "/users/${SLUG}[bot]" --jq .id)
+          echo "GIT_BOT_NAME=${SLUG}[bot]" >> "$GITHUB_ENV"
+          echo "GIT_BOT_EMAIL=${bot_id}+${SLUG}[bot]@users.noreply.github.com" >> "$GITHUB_ENV"
+
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          token: ${{ env.GH_TOKEN }}
+          token: ${{ steps.app-token.outputs.token }}
 
       - name: Check issue is open
         run: |
@@ -59,8 +75,8 @@ jobs:
 
       - name: Configure git
         run: |
-          git config user.name  "claude-agent[bot]"
-          git config user.email "claude-agent[bot]@users.noreply.github.com"
+          git config user.name  "$GIT_BOT_NAME"
+          git config user.email "$GIT_BOT_EMAIL"
 
       - name: Record start time
         run: echo "STARTED_AT=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$GITHUB_ENV"
@@ -72,7 +88,7 @@ jobs:
         with: &agent
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
-          github_token: ${{ env.GH_TOKEN }}
+          github_token: ${{ steps.app-token.outputs.token }}
           # Print Claude's turns in the job log so silent runs can be diagnosed.
           show_full_output: true
           claude_args: >-
@@ -136,6 +152,9 @@ jobs:
 
       - name: Report failure on issue
         if: failure()
+        env:
+          # Fall back to the default token if the app token step itself failed.
+          GH_TOKEN: ${{ env.GH_TOKEN || github.token }}
         run: |
           gh issue comment "$ISSUE_NUMBER" --body \
             "🤖 **Claude agent**
