@@ -33,3 +33,7 @@ with `🤖 **Claude agent**`.
 Branches are named `claude/issue-<number>`. Commit messages reference the issue (`#<number>`).
 If CI fails on a `claude/` branch, `.github/workflows/claude-ci-fix.yml` retries automatically
 (limited attempts) and labels the PR `needs-human` when it gives up.
+
+Every PR from this repository is also reviewed by an agent (`.github/workflows/claude-review.yml`).
+It keeps one review comment on the PR: blocking issues fail the check, non-blocking issues only
+comment, and a clean review posts nothing (and removes an outdated review comment).
