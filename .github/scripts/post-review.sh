@@ -29,7 +29,8 @@ else
 fi
 
 # One markdown bullet per finding: "- `file:line` problem → suggestion"
-items='map("- `\(.file // "general")\(if .line then ":\(.line)" else "" end)` \(.problem)\(if .suggestion then " → \(.suggestion)" else "" end)") | join("\n")'
+# Missing or empty fields get a fallback, so the comment never shows "null".
+items='map("- `\(.file // "general")\(if .line then ":\(.line)" else "" end)` \(.problem // "" | if . == "" then "(no description)" else . end)\(.suggestion // "" | if . == "" then "" else " → \(.)" end)") | join("\n")'
 
 body_file=$(mktemp)
 {
