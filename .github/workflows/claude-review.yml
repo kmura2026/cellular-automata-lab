@@ -4,7 +4,7 @@ name: Claude – review PR
 # JSON file; .github/scripts/post-review.sh then comments on the PR and sets the result:
 #   blocking issues      -> comment, job fails
 #   non-blocking only    -> comment, job passes
-#   no issues            -> no comment, job passes
+#   no issues            -> "No issues found" comment, job passes
 on:
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review]

@@ -2,7 +2,7 @@
 # Turns the reviewer agent's JSON result into a PR comment and a job result.
 #   blocking findings     -> comment, exit 1
 #   non-blocking only     -> comment, exit 0
-#   no findings           -> no comment, exit 0
+#   no findings           -> "No issues found" comment, exit 0
 # Each run posts a new comment, so the PR keeps the full review/fix history.
 # The hidden marker names the reviewed commit; claude-ci-fix.yml looks it up by SHA.
 # Needs GH_TOKEN, GITHUB_REPOSITORY, PR_NUMBER, HEAD_SHA, REVIEW_FILE.
@@ -20,14 +20,12 @@ blocking=$(jq '.blocking | length' "$REVIEW_FILE")
 non_blocking=$(jq '.non_blocking | length' "$REVIEW_FILE")
 echo "Review result: $blocking blocking, $non_blocking non-blocking"
 
-if [ "$blocking" -eq 0 ] && [ "$non_blocking" -eq 0 ]; then
-  exit 0
-fi
-
 if [ "$blocking" -gt 0 ]; then
   verdict="❌ **Changes requested** – $blocking blocking issue(s)"
-else
+elif [ "$non_blocking" -gt 0 ]; then
   verdict="✅ **Approved with comments** – no blocking issues"
+else
+  verdict="✅ **No issues found**"
 fi
 
 # One markdown bullet per finding: "- `file:line` problem → suggestion"
