@@ -26,7 +26,8 @@ env:
   FAILED_WORKFLOW: ${{ github.event.workflow_run.name }}
   FAILED_SHA: ${{ github.event.workflow_run.head_sha }}
   REVIEW_WORKFLOW: "Claude – review PR"
-  REVIEW_MARKER: "<!-- claude-review -->"
+  # post-review.sh tags each review comment with the reviewed commit.
+  REVIEW_MARKER: "<!-- claude-review sha=${{ github.event.workflow_run.head_sha }} -->"
   MAX_ATTEMPTS: ${{ vars.CLAUDE_MAX_CI_FIX_ATTEMPTS || 3 }}
   MARKER: "<!-- claude-ci-fix-attempt -->"
 
@@ -71,8 +72,11 @@ jobs:
           if [ "$head_sha" != "$FAILED_SHA" ]; then skip "Branch moved on since $FAILED_SHA; skipping"; fi
           mkdir -p "$RUNNER_TEMP/ci"
           if [ "$FAILED_WORKFLOW" = "$REVIEW_WORKFLOW" ]; then
-            gh api "repos/$GITHUB_REPOSITORY/issues/$pr/comments" --paginate \
-              --jq ".[] | select(.body | contains(\"$REVIEW_MARKER\")) | .body" > "$RUNNER_TEMP/ci/review.md"
+            # Newest review of this commit (a re-run review posts another comment).
+            review_id=$(gh api "repos/$GITHUB_REPOSITORY/issues/$pr/comments" --paginate \
+              --jq ".[] | select(.body | contains(\"$REVIEW_MARKER\")) | .id" | tail -n 1)
+            if [ -z "$review_id" ]; then skip "No review comment for $FAILED_SHA; nothing to fix"; fi
+            gh api "repos/$GITHUB_REPOSITORY/issues/comments/$review_id" --jq .body > "$RUNNER_TEMP/ci/review.md"
             # No blocking items means the review itself broke (e.g. no result); code fixes won't help.
             if ! grep -q '^### Blocking' "$RUNNER_TEMP/ci/review.md"; then
               skip "Review failed without blocking items; nothing to fix"

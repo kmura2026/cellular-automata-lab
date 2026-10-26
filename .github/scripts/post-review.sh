@@ -2,12 +2,13 @@
 # Turns the reviewer agent's JSON result into a PR comment and a job result.
 #   blocking findings     -> comment, exit 1
 #   non-blocking only     -> comment, exit 0
-#   no findings           -> remove an old review comment if any, exit 0
-# Keeps one review comment per PR (found by MARKER) and updates it on each run.
+#   no findings           -> no comment, exit 0
+# Each run posts a new comment, so the PR keeps the full review/fix history.
+# The hidden marker names the reviewed commit; claude-ci-fix.yml looks it up by SHA.
 # Needs GH_TOKEN, GITHUB_REPOSITORY, PR_NUMBER, HEAD_SHA, REVIEW_FILE.
 set -euo pipefail
 
-MARKER="<!-- claude-review -->"
+MARKER="<!-- claude-review sha=$HEAD_SHA -->"
 
 if ! jq -e '(.blocking | type == "array") and (.non_blocking | type == "array")' \
   "$REVIEW_FILE" >/dev/null 2>&1; then
@@ -19,14 +20,7 @@ blocking=$(jq '.blocking | length' "$REVIEW_FILE")
 non_blocking=$(jq '.non_blocking | length' "$REVIEW_FILE")
 echo "Review result: $blocking blocking, $non_blocking non-blocking"
 
-old_comment=$(gh api "repos/$GITHUB_REPOSITORY/issues/$PR_NUMBER/comments" --paginate \
-  --jq ".[] | select(.body | contains(\"$MARKER\")) | .id" | tail -n 1)
-
 if [ "$blocking" -eq 0 ] && [ "$non_blocking" -eq 0 ]; then
-  if [ -n "$old_comment" ]; then
-    gh api -X DELETE "repos/$GITHUB_REPOSITORY/issues/comments/$old_comment" >/dev/null
-    echo "Removed outdated review comment $old_comment"
-  fi
   exit 0
 fi
 
@@ -61,12 +55,7 @@ body_file=$(mktemp)
   echo "<sub>Commit ${HEAD_SHA:0:7}</sub>"
 } > "$body_file"
 
-if [ -n "$old_comment" ]; then
-  gh api -X PATCH "repos/$GITHUB_REPOSITORY/issues/comments/$old_comment" \
-    -F "body=@$body_file" >/dev/null
-else
-  gh pr comment "$PR_NUMBER" -R "$GITHUB_REPOSITORY" --body-file "$body_file"
-fi
+gh pr comment "$PR_NUMBER" -R "$GITHUB_REPOSITORY" --body-file "$body_file"
 
 if [ "$blocking" -gt 0 ]; then
   echo "::error::Reviewer found $blocking blocking issue(s)"
