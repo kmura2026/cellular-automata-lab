@@ -35,6 +35,7 @@ If CI fails on a `claude/` branch, `.github/workflows/claude-ci-fix.yml` retries
 (limited attempts) and labels the PR `needs-human` when it gives up.
 
 Every PR from this repository is also reviewed by an agent (`.github/workflows/claude-review.yml`).
-Each run posts a new review comment (old ones stay as history): blocking issues fail the check,
-non-blocking issues only comment, and a clean review posts "No issues found".
-A blocking review on a `claude/` branch also starts `claude-ci-fix.yml`, sharing the same attempt limit.
+It reports only fatal issues (bugs, missing requirements, security problems, tests that don't test
+what they claim); style and refactoring are left for after merge. Each run posts a new review comment
+(old ones stay as history): any issue fails the check, and a clean review posts "No issues found".
+A failed review on a `claude/` branch also starts `claude-ci-fix.yml`, sharing the same attempt limit.

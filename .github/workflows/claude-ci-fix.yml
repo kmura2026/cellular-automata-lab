@@ -2,7 +2,7 @@ name: Claude – fix CI failure
 
 on:
   workflow_run:
-    # Failed tests/lint (CI) and blocking agent reviews both start a fix attempt.
+    # Failed tests/lint (CI) and failed agent reviews both start a fix attempt.
     workflows: [CI, "Claude – review PR"]
     types: [completed]
 
@@ -77,9 +77,9 @@ jobs:
               --jq ".[] | select(.body | contains(\"$REVIEW_MARKER\")) | .id" | tail -n 1)
             if [ -z "$review_id" ]; then skip "No review comment for $FAILED_SHA; nothing to fix"; fi
             gh api "repos/$GITHUB_REPOSITORY/issues/comments/$review_id" --jq .body > "$RUNNER_TEMP/ci/review.md"
-            # No blocking items means the review itself broke (e.g. no result); code fixes won't help.
-            if ! grep -q '^### Blocking' "$RUNNER_TEMP/ci/review.md"; then
-              skip "Review failed without blocking items; nothing to fix"
+            # No issues listed means the review itself broke (e.g. no result); code fixes won't help.
+            if ! grep -q '^### Issues' "$RUNNER_TEMP/ci/review.md"; then
+              skip "Review failed without listing issues; nothing to fix"
             fi
           fi
           attempts=$(gh api "repos/$GITHUB_REPOSITORY/issues/$pr/comments" --paginate \
@@ -147,8 +147,8 @@ jobs:
                - `CI` failed: read the failure log at `${{ runner.temp }}/ci/failed.log` and
                  reproduce locally with `npm run lint && npm run typecheck && npm test`.
                  Note CI runs Node 22, 24 and 26; the runner here has Node 24.
-               - `${{ env.REVIEW_WORKFLOW }}` failed: the agent review found blocking issues.
-                 They are under "### Blocking" in `${{ runner.temp }}/ci/review.md`. Fix each one
+               - `${{ env.REVIEW_WORKFLOW }}` failed: the agent review found issues.
+                 They are under "### Issues" in `${{ runner.temp }}/ci/review.md`. Fix each one
                  that is correct. If you are sure an item is wrong, do not change the code for it;
                  explain why in your PR comment.
             2. Decide which side is wrong. Do not edit files yourself:
@@ -158,5 +158,5 @@ jobs:
             4. Ask `reviewer` to check the fix. Address BLOCKING items (1 round).
             5. Commit (`fix CI: <summary>`) and `git push`. Do not force-push.
             6. Comment on the PR: cause of the failure and what changed (for a review failure,
-               list each blocking item and whether it was fixed or why not).
+               list each review issue and whether it was fixed or why not).
                If you could not find a fix, say so and stop without pushing.

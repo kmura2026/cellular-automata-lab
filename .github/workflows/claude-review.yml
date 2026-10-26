@@ -2,9 +2,9 @@ name: Claude – review PR
 
 # An agent reviews every PR diff. The agent only reads code and writes its findings to a
 # JSON file; .github/scripts/post-review.sh then comments on the PR and sets the result:
-#   blocking issues      -> comment, job fails
-#   non-blocking only    -> comment, job passes
-#   no issues            -> "No issues found" comment, job passes
+#   issues    -> comment, job fails
+#   no issues -> "No issues found" comment, job passes
+# Only fatal problems are reported; style and refactoring can be done after merge.
 on:
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review]
@@ -71,26 +71,23 @@ jobs:
                `git diff origin/${{ env.BASE_REF }}...HEAD`. If the PR links an issue, read it
                with `gh issue view <n>`. Read surrounding code as needed.
                CI already runs lint, typecheck and tests; do not run them.
-            2. Check:
-               - Does the change do what the PR/issue asks, and nothing unrelated?
-               - Correctness: edge cases, off-by-one, wrap-around, invalid input.
-               - Do tests check the requirements, and would they fail if the feature broke?
-               - Readability and consistency with CLAUDE.md.
-               - Security: no secrets, no unsafe evaluation of input, safe workflow permissions.
-            3. Classify each finding:
-               - blocking: a bug, a missing requirement, a security problem, or a test that does
-                 not test what it claims.
-               - non_blocking: everything else worth mentioning (style, naming, small cleanups).
-               Report only findings you are confident about. Do not invent issues; an empty
-               result is a good outcome.
-            4. Write the result with the Write tool to `${{ env.REVIEW_FILE }}`, exactly this
+            2. Look only for fatal problems:
+               - a bug: wrong results, crashes, broken edge cases (off-by-one, wrap-around,
+                 invalid input);
+               - a missing requirement from the PR/issue;
+               - a security problem: secrets, unsafe evaluation of input, unsafe workflow
+                 permissions;
+               - a test that does not test what it claims, so it would pass if the feature broke.
+               Ignore style, naming, readability, small cleanups and refactoring ideas; those
+               can be done after merge. Report only issues you are confident about. Do not
+               invent issues; an empty result is a good outcome.
+            3. Write the result with the Write tool to `${{ env.REVIEW_FILE }}`, exactly this
                JSON shape and nothing else:
                {
                  "summary": "<one or two sentences on the change>",
-                 "blocking":     [{"file": "src/x.ts", "line": 12, "problem": "...", "suggestion": "..."}],
-                 "non_blocking": [{"file": "src/x.ts", "line": 30, "problem": "...", "suggestion": "..."}]
+                 "issues": [{"file": "src/x.ts", "line": 12, "problem": "...", "suggestion": "..."}]
                }
-               Use empty arrays when there are no findings. `line` may be null.
+               Use an empty array when there are no issues. `line` may be null.
 
       - name: Post review and set result
         env:
