@@ -26,6 +26,9 @@ agent delegates to three subagents in `.claude/agents/`:
 - `test-writer` – edits `tests/` only
 - `reviewer` – read-only review of the diff
 
+They run one after another in this order: `test-writer` writes the tests first, then
+`implementer` makes them pass, then `reviewer` reviews the result.
+
 The agent posts, pushes and opens PRs with a GitHub App token (secrets `APP_ID` and
 `APP_PRIVATE_KEY`), so its work shows up as `<app>[bot]`. Every comment it posts also starts
 with `🤖 **Claude agent**`.

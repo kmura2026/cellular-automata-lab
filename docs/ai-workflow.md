@@ -6,13 +6,12 @@ flowchart TD
     M[Manual run with issue number] --> B
     B --> C{Orchestrator triages}
     C -- question / unclear --> R[Reply on issue]
-    C -- code change --> D[implementer: src/]
-    C -- code change --> E[test-writer: tests/]
+    C -- code change --> E[1. test-writer: tests/]
+    E --> D[2. implementer: src/]
     D --> F[Local lint + tests]
-    E --> F
-    F -- fail, up to 3x --> D & E
-    F -- pass --> G[reviewer]
-    G -- REQUEST_CHANGES, up to 2x --> D & E
+    F -- fail, up to 3x --> E & D
+    F -- pass --> G[3. reviewer]
+    G -- REQUEST_CHANGES, up to 2x --> E & D
     G -- APPROVE --> H[Push branch claude/issue-N, open PR]
     H --> I[CI]
     I -- fail --> J[claude-ci-fix.yml]
@@ -31,6 +30,12 @@ flowchart TD
 | `.claude/agents/test-writer.md` | Subagent: edits tests only. |
 | `.claude/agents/reviewer.md` | Subagent: read-only review, returns APPROVE / REQUEST_CHANGES. |
 | `CLAUDE.md` | Project rules every agent reads. |
+
+## Subagent order
+Subagents run one at a time: `test-writer` writes tests from the issue first, `implementer` then
+makes them pass, and `reviewer` checks the result last. Fixes follow the same order: test changes
+before code changes, then review again. (A fix goes to whichever of the two owns
+the broken file, starting with `test-writer` when both do.)
 
 ## Retries
 - **Inside a run:** failing local checks go back to the responsible subagent (3 rounds); blocking review findings go back too (2 rounds).
