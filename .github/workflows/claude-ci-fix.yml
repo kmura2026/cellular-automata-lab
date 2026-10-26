@@ -2,7 +2,8 @@ name: Claude – fix CI failure
 
 on:
   workflow_run:
-    workflows: [CI]
+    # Failed tests/lint (CI) and blocking agent reviews both start a fix attempt.
+    workflows: [CI, "Claude – review PR"]
     types: [completed]
 
 permissions:
@@ -22,6 +23,10 @@ env:
   CLAUDE_CODE_DISABLE_BACKGROUND_TASKS: "1"
   BRANCH: ${{ github.event.workflow_run.head_branch }}
   FAILED_RUN_ID: ${{ github.event.workflow_run.id }}
+  FAILED_WORKFLOW: ${{ github.event.workflow_run.name }}
+  FAILED_SHA: ${{ github.event.workflow_run.head_sha }}
+  REVIEW_WORKFLOW: "Claude – review PR"
+  REVIEW_MARKER: "<!-- claude-review -->"
   MAX_ATTEMPTS: ${{ vars.CLAUDE_MAX_CI_FIX_ATTEMPTS || 3 }}
   MARKER: "<!-- claude-ci-fix-attempt -->"
 
@@ -57,8 +62,22 @@ jobs:
       - name: Find PR and count previous attempts
         id: pr
         run: |
-          pr=$(gh pr list -R "$GITHUB_REPOSITORY" --head "$BRANCH" --state open --json number -q '.[0].number')
-          if [ -z "$pr" ]; then echo "No open PR for $BRANCH"; echo "skip=true" >> "$GITHUB_OUTPUT"; exit 0; fi
+          skip() { echo "$1"; echo "skip=true" >> "$GITHUB_OUTPUT"; exit 0; }
+          read -r pr head_sha < <(gh pr list -R "$GITHUB_REPOSITORY" --head "$BRANCH" --state open \
+            --json number,headRefOid -q '.[0] // empty | "\(.number) \(.headRefOid)"') || true
+          if [ -z "$pr" ]; then skip "No open PR for $BRANCH"; fi
+          # CI and the review can both fail for one commit. Once a fix is pushed, the other
+          # failure is outdated: the new commit gets checked and reviewed again.
+          if [ "$head_sha" != "$FAILED_SHA" ]; then skip "Branch moved on since $FAILED_SHA; skipping"; fi
+          mkdir -p "$RUNNER_TEMP/ci"
+          if [ "$FAILED_WORKFLOW" = "$REVIEW_WORKFLOW" ]; then
+            gh api "repos/$GITHUB_REPOSITORY/issues/$pr/comments" --paginate \
+              --jq ".[] | select(.body | contains(\"$REVIEW_MARKER\")) | .body" > "$RUNNER_TEMP/ci/review.md"
+            # No blocking items means the review itself broke (e.g. no result); code fixes won't help.
+            if ! grep -q '^### Blocking' "$RUNNER_TEMP/ci/review.md"; then
+              skip "Review failed without blocking items; nothing to fix"
+            fi
+          fi
           attempts=$(gh api "repos/$GITHUB_REPOSITORY/issues/$pr/comments" --paginate \
             --jq "[.[] | select(.body | contains(\"$MARKER\"))] | length" | awk '{s+=$1} END {print s+0}')
           echo "number=$pr" >> "$GITHUB_OUTPUT"
@@ -68,7 +87,7 @@ jobs:
               --description "Agent gave up; a human should look" --force
             gh pr edit "$pr" -R "$GITHUB_REPOSITORY" --add-label needs-human
             gh pr comment "$pr" -R "$GITHUB_REPOSITORY" --body \
-              "🤖 **Claude agent**: CI is still failing after $attempts automatic fix attempts. Stopping; labelled \`needs-human\`."
+              "🤖 **Claude agent**: checks are still failing after $attempts automatic fix attempts. Stopping; labelled \`needs-human\`."
             echo "skip=true" >> "$GITHUB_OUTPUT"
           else
             echo "skip=false" >> "$GITHUB_OUTPUT"
@@ -85,8 +104,7 @@ jobs:
         if: steps.pr.outputs.skip == 'false'
         run: |
           gh pr comment "${{ steps.pr.outputs.number }}" --body \
-            "$MARKER 🤖 **Claude agent**: automatic CI fix attempt ${{ steps.pr.outputs.attempt }}/$MAX_ATTEMPTS for run $FAILED_RUN_ID."
-          mkdir -p "$RUNNER_TEMP/ci"
+            "$MARKER 🤖 **Claude agent**: automatic fix attempt ${{ steps.pr.outputs.attempt }}/$MAX_ATTEMPTS for failed $FAILED_WORKFLOW run $FAILED_RUN_ID."
           gh run view "$FAILED_RUN_ID" --log-failed | tail -c 60000 > "$RUNNER_TEMP/ci/failed.log" || true
 
       - uses: actions/setup-node@v4
@@ -113,21 +131,28 @@ jobs:
             --add-dir ${{ runner.temp }}/ci
             --allowedTools "Agent,Task,Read,Write,Edit,Glob,Grep,TodoWrite,Bash(git:*),Bash(gh:*),Bash(npm:*),Bash(npx:*),Bash(node:*),Bash(ls:*),Bash(cat:*)"
           prompt: |
-            CI failed on branch `${{ env.BRANCH }}` (PR #${{ steps.pr.outputs.number }}).
+            The `${{ env.FAILED_WORKFLOW }}` check failed on branch `${{ env.BRANCH }}`
+            (PR #${{ steps.pr.outputs.number }}).
             This is automatic fix attempt ${{ steps.pr.outputs.attempt }} of ${{ env.MAX_ATTEMPTS }}.
             Run subagents in the foreground and wait for each result; never end your turn while one
             is still running.
             Follow CLAUDE.md. Start every comment you post with `🤖 **Claude agent**` on its own line.
 
-            1. Read the failure log at `${{ runner.temp }}/ci/failed.log` and the PR with
-               `gh pr view ${{ steps.pr.outputs.number }} --comments` (it links the issue).
-               Reproduce locally with `npm run lint && npm run typecheck && npm test`.
-               Note CI runs Node 22, 24 and 26; the runner here has Node 24.
+            1. Find the cause. Read the PR with `gh pr view ${{ steps.pr.outputs.number }} --comments`
+               (it links the issue).
+               - `CI` failed: read the failure log at `${{ runner.temp }}/ci/failed.log` and
+                 reproduce locally with `npm run lint && npm run typecheck && npm test`.
+                 Note CI runs Node 22, 24 and 26; the runner here has Node 24.
+               - `${{ env.REVIEW_WORKFLOW }}` failed: the agent review found blocking issues.
+                 They are under "### Blocking" in `${{ runner.temp }}/ci/review.md`. Fix each one
+                 that is correct. If you are sure an item is wrong, do not change the code for it;
+                 explain why in your PR comment.
             2. Decide which side is wrong. Do not edit files yourself:
                - anything outside tests/ (src/, README.md, docs/, config) -> `implementer`
                - wrong or flaky test -> `test-writer` (never just delete or weaken a correct test)
             3. Verify locally until all checks pass (up to 3 rounds).
             4. Ask `reviewer` to check the fix. Address BLOCKING items (1 round).
             5. Commit (`fix CI: <summary>`) and `git push`. Do not force-push.
-            6. Comment on the PR: cause of the failure and what changed.
+            6. Comment on the PR: cause of the failure and what changed (for a review failure,
+               list each blocking item and whether it was fixed or why not).
                If you could not find a fix, say so and stop without pushing.

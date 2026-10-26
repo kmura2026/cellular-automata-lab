@@ -37,3 +37,4 @@ If CI fails on a `claude/` branch, `.github/workflows/claude-ci-fix.yml` retries
 Every PR from this repository is also reviewed by an agent (`.github/workflows/claude-review.yml`).
 It keeps one review comment on the PR: blocking issues fail the check, non-blocking issues only
 comment, and a clean review posts nothing (and removes an outdated review comment).
+A blocking review on a `claude/` branch also starts `claude-ci-fix.yml`, sharing the same attempt limit.
