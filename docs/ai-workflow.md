@@ -45,6 +45,10 @@ PR (`claude-review.yml`), so all three apply the same rules. To add an aspect, a
 `.claude/agents/reviewer-<aspect>.md` file; every workflow picks it up. Each extra aspect adds
 one more agent run per review.
 
+On PRs, `claude-code-action` replaces `.claude/` and `CLAUDE.md` with the base branch's copy,
+because the PR head is untrusted. So a PR is always reviewed by the reviewers already on `main`:
+a PR that adds or changes a reviewer is reviewed by the new version only after it is merged.
+
 ## Retries
 - **Inside a run:** failing local checks go back to the responsible subagent (3 rounds); blocking review findings go back too (2 rounds).
 - **Agent crash** (API error, timeout of the action): the issue workflow retries the agent once, then comments on the issue with the log link.

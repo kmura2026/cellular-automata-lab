@@ -1,24 +1,35 @@
 #!/usr/bin/env bash
 # Merges the results of the reviewer-* subagents into ONE PR comment and a job result.
 #   issues            -> comment, exit 1
-#   missing result(s) -> comment with a warning, exit 1
+#   invalid result(s) -> comment with a warning, exit 1
+#   no results at all -> "Review incomplete" comment, exit 1
 #   no issues         -> "No issues found" comment, exit 0
 # Each run posts a new comment, so the PR keeps the full review/fix history.
 # The hidden marker names the reviewed commit; claude-ci-fix.yml looks it up by SHA.
 # Needs GH_TOKEN, GITHUB_REPOSITORY, PR_NUMBER, HEAD_SHA and REVIEW_DIR (holds <aspect>.json).
-# The expected aspects are the .claude/agents/reviewer-<aspect>.md files.
+# The aspects are whatever result files the orchestrator wrote; a reviewer it skipped
+# entirely is not detected.
 set -euo pipefail
 
 MARKER="<!-- claude-review sha=$HEAD_SHA -->"
 
-REVIEW_ASPECTS=$(find .claude/agents -name 'reviewer-*.md' -exec basename {} .md \; | sed 's/^reviewer-//' | sort | xargs)
+REVIEW_ASPECTS=$(find "$REVIEW_DIR" -maxdepth 1 -name '*.json' -exec basename {} .json \; 2>/dev/null | sort | xargs || true)
 if [ -z "$REVIEW_ASPECTS" ]; then
-  echo "::error::No .claude/agents/reviewer-*.md files found"
+  # No "### Issues" section, so claude-ci-fix.yml skips this instead of trying a code fix.
+  gh pr comment "$PR_NUMBER" -R "$GITHUB_REPOSITORY" --body "$MARKER
+🤖 **Claude agent**
+
+⚠️ **Review incomplete**
+
+No reviewer wrote a result, so nothing was reviewed. PRs are reviewed with the base branch's \`.claude/\` (the PR's own copy is untrusted), so a PR that adds reviewers is reviewed by them only after it is merged.
+
+<sub>Commit ${HEAD_SHA:0:7}</sub>"
+  echo "::error::No reviewer results in $REVIEW_DIR"
   exit 1
 fi
 
-# Collect valid results, tagging each issue with its aspect. Aspects without a valid result
-# are listed as missing.
+# Collect valid results, tagging each issue with its aspect. Aspects whose file is not
+# valid are listed as missing.
 results='[]'
 missing=()
 for aspect in $REVIEW_ASPECTS; do
