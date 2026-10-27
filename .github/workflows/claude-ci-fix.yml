@@ -157,7 +157,9 @@ jobs:
                If both sides need changes, run `test-writer` first, then `implementer`, one after
                the other (never in parallel).
             3. Verify locally until all checks pass (up to 3 rounds).
-            4. Only after the fix passes locally, ask `reviewer` to check it. Address BLOCKING items (1 round).
+            4. Only after the fix passes locally, run every `reviewer-*` subagent
+               (`ls .claude/agents/reviewer-*.md`) in parallel on it, giving each the PR number.
+               Address BLOCKING items (1 round).
             5. Commit (`fix CI: <summary>`) and `git push`. Do not force-push.
             6. Comment on the PR: cause of the failure and what changed (for a review failure,
                list each review issue and whether it was fixed or why not).

@@ -130,17 +130,19 @@ jobs:
             4. Verify locally: `npm run lint && npm run typecheck && npm test`.
                If anything fails, send the output to the subagent that owns the broken file
                and verify again. Up to 3 rounds.
-            5. Review: only after steps 3 and 4, ask the `reviewer` subagent. If it returns
-               REQUEST_CHANGES, route each BLOCKING item to its owner (`test-writer` first when
-               both need changes, then `implementer`), re-verify (step 4), and ask for review
-               again. Up to 2 review rounds.
+            5. Review: only after steps 3 and 4, run every `reviewer-*` subagent
+               (`ls .claude/agents/reviewer-*.md`) in parallel, giving each the issue number.
+               If any returns REQUEST_CHANGES, route each BLOCKING item to its owner
+               (`test-writer` first when both need changes, then `implementer`), re-verify
+               (step 4), and run again only the reviewers that requested changes.
+               Up to 2 review rounds.
             6. Commit with a message like `<summary> (#${{ env.ISSUE_NUMBER }})`, push with
                `git push -u origin HEAD`, and open a PR with `gh pr create --base main`.
-               PR body: summary, `Closes #${{ env.ISSUE_NUMBER }}`, test results, the reviewer's
+               PR body: summary, `Closes #${{ env.ISSUE_NUMBER }}`, test results, each reviewer's
                final verdict, and any unresolved non-blocking notes. If a PR for this branch
                already exists, push only and comment on it instead.
             7. Comment on the issue with the PR link. If you could not reach passing checks or
-               an APPROVE verdict, still open the PR as a draft (`--draft`) and explain what is left.
+               APPROVE from every reviewer, still open the PR as a draft (`--draft`) and explain what is left.
 
       - name: Check the agent left a result
         id: check

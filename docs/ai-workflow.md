@@ -10,7 +10,7 @@ flowchart TD
     E --> D[2. implementer: src/]
     D --> F[Local lint + tests]
     F -- fail, up to 3x --> E & D
-    F -- pass --> G[3. reviewer]
+    F -- pass --> G[3. reviewer-* subagents]
     G -- REQUEST_CHANGES, up to 2x --> E & D
     G -- APPROVE --> H[Push branch claude/issue-N, open PR]
     H --> I[CI]
@@ -28,14 +28,22 @@ flowchart TD
 | `.github/workflows/claude-ci-fix.yml` | When CI fails on a `claude/*` branch, the agent reads the log and pushes a fix. |
 | `.claude/agents/implementer.md` | Subagent: edits production code only. |
 | `.claude/agents/test-writer.md` | Subagent: edits tests only. |
-| `.claude/agents/reviewer.md` | Subagent: read-only review, returns APPROVE / REQUEST_CHANGES. |
+| `.github/workflows/claude-review.yml` | Reviews every PR with the `reviewer-*` subagents and posts one comment; any BLOCKING item fails the check. |
+| `.claude/agents/reviewer-*.md` | Subagents: read-only review, one per aspect (correctness, security, performance, maintainability, cost). Each returns APPROVE / REQUEST_CHANGES. |
+| `.claude/review-rules.md` | Rules and report format shared by all `reviewer-*` subagents. |
 | `CLAUDE.md` | Project rules every agent reads. |
 
 ## Subagent order
 Subagents run one at a time: `test-writer` writes tests from the issue first, `implementer` then
-makes them pass, and `reviewer` checks the result last. Fixes follow the same order: test changes
+makes them pass, and the `reviewer-*` subagents check the result last (in parallel, since they only read). Fixes follow the same order: test changes
 before code changes, then review again. (A fix goes to whichever of the two owns
 the broken file, starting with `test-writer` when both do.)
+
+## Reviewers
+The same `reviewer-*` subagents review inside the issue run, inside each CI-fix run, and on every
+PR (`claude-review.yml`), so all three apply the same rules. To add an aspect, add a
+`.claude/agents/reviewer-<aspect>.md` file; every workflow picks it up. Each extra aspect adds
+one more agent run per review.
 
 ## Retries
 - **Inside a run:** failing local checks go back to the responsible subagent (3 rounds); blocking review findings go back too (2 rounds).
