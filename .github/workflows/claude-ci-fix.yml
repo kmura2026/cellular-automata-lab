@@ -26,7 +26,7 @@ env:
   FAILED_WORKFLOW: ${{ github.event.workflow_run.name }}
   FAILED_SHA: ${{ github.event.workflow_run.head_sha }}
   REVIEW_WORKFLOW: "Claude – review PR"
-  # post-review.sh tags each review comment with the reviewed commit.
+  # claude-review.yml tags each review comment with the reviewed commit.
   REVIEW_MARKER: "<!-- claude-review sha=${{ github.event.workflow_run.head_sha }} -->"
   MAX_ATTEMPTS: ${{ vars.CLAUDE_MAX_CI_FIX_ATTEMPTS || 3 }}
   MARKER: "<!-- claude-ci-fix-attempt -->"
