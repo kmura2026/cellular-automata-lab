@@ -80,10 +80,8 @@ jobs:
           git config user.email "$GIT_BOT_EMAIL"
 
       - name: Run agent
-        id: agent
-        continue-on-error: true
         uses: anthropics/claude-code-action@v1
-        with: &agent
+        with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           github_token: ${{ steps.app-token.outputs.token }}
@@ -119,11 +117,6 @@ jobs:
                already exists, push only and comment on it instead.
             5. Comment on the issue with the PR link. If you could not reach passing checks or
                an APPROVE verdict, still open the PR as a draft (`--draft`) and explain what is left.
-
-      - name: Retry agent once if it crashed
-        if: steps.agent.outcome == 'failure'
-        uses: anthropics/claude-code-action@v1
-        with: *agent
 
       - name: Report failure on issue
         if: failure()

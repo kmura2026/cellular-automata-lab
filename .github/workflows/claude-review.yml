@@ -21,7 +21,6 @@ concurrency:
 env:
   PR_NUMBER: ${{ github.event.pull_request.number }}
   BASE_REF: ${{ github.event.pull_request.base.ref }}
-  HEAD_SHA: ${{ github.event.pull_request.head.sha }}
 
 jobs:
   review:
@@ -97,8 +96,7 @@ jobs:
 
                One bullet per issue; leave out `:12` if no single line applies.
 
-      # Each run posts a new comment, so the PR keeps the review/fix history. The hidden
-      # marker names the reviewed commit; claude-ci-fix.yml looks the comment up by it.
+      # Each run posts a new comment, so the PR keeps the review history.
       - name: Post review and set result
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
@@ -107,7 +105,7 @@ jobs:
             echo "::error::Reviewer agent did not write $REVIEW_FILE"; exit 1
           fi
           body="$RUNNER_TEMP/comment.md"
-          printf '<!-- claude-review sha=%s -->\n🤖 **Claude agent**\n\n' "$HEAD_SHA" > "$body"
+          printf '🤖 **Claude agent**\n\n' > "$body"
           cat "$REVIEW_FILE" >> "$body"
           gh pr comment "$PR_NUMBER" -R "$GITHUB_REPOSITORY" --body-file "$body"
           # Pass only on an explicit clean result, so a malformed file fails instead of passing.
