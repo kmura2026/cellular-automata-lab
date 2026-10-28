@@ -61,8 +61,8 @@ each the issue or PR number and the diff command if it is not the default. The r
 REQUEST_CHANGES if any reviewer returns REQUEST_CHANGES or no report in the format of
 `.claude/review-rules.md`; otherwise APPROVE. Adding an aspect means adding one agent file.
 
-The agent posts, pushes and opens PRs with a GitHub App token (secrets `APP_ID` and
-`APP_PRIVATE_KEY`), so its work shows up as `<app>[bot]`. Every comment it posts also starts
+The agent posts, pushes and opens PRs with a GitHub App token (setup in `docs/ai-workflow.md`),
+so its work shows up as `<app>[bot]`. Every comment it posts also starts
 with `🤖 **Claude agent**`.
 
 Branches are named `claude/issue-<number>`. Commit messages reference the issue (`#<number>`),
