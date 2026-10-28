@@ -1,7 +1,8 @@
 name: Claude – fix PR
 
-# Run manually on a PR whose checks failed (CI or the review agent). The agent pushes a fix
-# to the PR branch, following "Making a change" in CLAUDE.md.
+# Pushes a fix to a PR whose checks failed (CI or the review agent), following "Making a change"
+# in CLAUDE.md. Runs automatically when a check fails on a PR from this repository (at most
+# MAX_ATTEMPTS times per PR), or manually.
 on:
   workflow_dispatch:
     inputs:
@@ -9,6 +10,9 @@ on:
         description: PR number to fix
         required: true
         type: number
+  workflow_run:
+    workflows: ["CI", "Claude – review PR"]
+    types: [completed]
 
 permissions:
   contents: write
@@ -17,17 +21,86 @@ permissions:
   actions: read
   id-token: write
 
-concurrency:
-  group: claude-fix-pr-${{ inputs.pr_number }}
-  cancel-in-progress: false
-
 env:
   # Run subagents in the foreground (see claude-issue.yml).
   CLAUDE_CODE_DISABLE_BACKGROUND_TASKS: "1"
-  PR_NUMBER: ${{ inputs.pr_number }}
+  PR_NUMBER: ${{ inputs.pr_number || github.event.workflow_run.pull_requests[0].number }}
+
+# One run per PR at a time, so a CI and a review failure on the same commit start only one fix.
+concurrency:
+  group: claude-fix-pr-${{ inputs.pr_number || github.event.workflow_run.pull_requests[0].number }}
+  cancel-in-progress: false
 
 jobs:
+  # Decides whether an automatic run should fix. Manual runs always do.
+  # Automatic runs check every completed run, not only failures: if CI fails and the review then
+  # passes, only the review's completion sees all checks done.
+  gate:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.workflow_run.event == 'pull_request' &&
+       github.event.workflow_run.head_repository.full_name == github.repository)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      checks: read
+      pull-requests: read
+    outputs:
+      fix: ${{ steps.decide.outputs.fix }}
+    steps:
+      - name: Create app token
+        id: app-token
+        if: github.event_name == 'workflow_run'
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ secrets.APP_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+
+      # Fix only the PR's latest commit, once all its checks are done and one failed, once per
+      # commit and at most MAX_ATTEMPTS times per PR. Attempts are counted by the comment posted here.
+      - name: Decide
+        id: decide
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          APP_TOKEN: ${{ steps.app-token.outputs.token }}
+          HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+          MAX_ATTEMPTS: "2"
+        run: |
+          if [ "$GITHUB_EVENT_NAME" = workflow_dispatch ]; then
+            echo "fix=true" >> "$GITHUB_OUTPUT"; exit 0
+          fi
+          head=$(gh pr view "$PR_NUMBER" --json headRefOid -q .headRefOid)
+          if [ "$head" != "$HEAD_SHA" ]; then
+            echo "PR has newer commits; skipping"; exit 0
+          fi
+          buckets=$(gh pr checks "$PR_NUMBER" --json name,bucket)
+          if jq -e 'any(.[]; .bucket == "pending")' <<<"$buckets" >/dev/null; then
+            echo "Other checks still running; the last one to finish decides"; exit 0
+          fi
+          failed=$(jq -r '[.[] | select(.bucket == "fail") | .name] | join(", ")' <<<"$buckets")
+          if [ -z "$failed" ]; then
+            echo "No check failed"; exit 0
+          fi
+          # Match loosely (any line ending), so a changed body cannot disable the cap.
+          attempts=$(gh pr view "$PR_NUMBER" --json comments \
+            -q '[.comments[].body | select(contains("\nAuto-fix attempt "))]')
+          if jq -e --arg sha "$HEAD_SHA" 'any(.[]; contains($sha))' <<<"$attempts" >/dev/null; then
+            echo "Already attempted for $HEAD_SHA; skipping"; exit 0
+          fi
+          count=$(jq length <<<"$attempts")
+          if [ "$count" -ge "$MAX_ATTEMPTS" ]; then
+            GH_TOKEN="$APP_TOKEN" gh pr comment "$PR_NUMBER" --body "🤖 **Claude agent**
+          Auto-fix stopped after $MAX_ATTEMPTS attempts; still failing: $failed. A human takes over."
+            exit 0
+          fi
+          GH_TOKEN="$APP_TOKEN" gh pr comment "$PR_NUMBER" --body "🤖 **Claude agent**
+          Auto-fix attempt $((count + 1))/$MAX_ATTEMPTS for $HEAD_SHA (failed: $failed)."
+          echo "fix=true" >> "$GITHUB_OUTPUT"
+
   fix:
+    needs: gate
+    if: needs.gate.outputs.fix == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:

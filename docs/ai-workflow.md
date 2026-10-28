@@ -11,8 +11,9 @@ flowchart TD
     B -- code change --> C[Making a change: test-writer, implementer, checks, reviewer-*]
     C --> H[Push branch claude/issue-N, open PR]
     H --> I[CI + claude-review.yml]
-    I -- fail --> L[Human takes over, e.g. runs claude-fix-pr.yml]
-    L --> I
+    I -- fail --> F[claude-fix-pr.yml pushes a fix, up to 2 times]
+    F --> I
+    I -- still failing --> L[Human takes over]
     I -- pass --> N[Human reviews and merges]
 ```
 
