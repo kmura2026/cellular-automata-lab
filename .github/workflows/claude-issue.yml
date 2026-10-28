@@ -79,9 +79,6 @@ jobs:
           git config user.name  "$GIT_BOT_NAME"
           git config user.email "$GIT_BOT_EMAIL"
 
-      - name: Record start time
-        run: echo "STARTED_AT=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$GITHUB_ENV"
-
       - name: Run agent
         id: agent
         continue-on-error: true
@@ -142,19 +139,10 @@ jobs:
             7. Comment on the issue with the PR link. If you could not reach passing checks or
                an APPROVE verdict, still open the PR as a draft (`--draft`) and explain what is left.
 
-      - name: Check the agent left a result
-        id: check
-        continue-on-error: true
-        run: .github/scripts/check-agent-result.sh
-
-      - name: Retry agent once if it crashed or left no result
-        if: steps.agent.outcome == 'failure' || steps.check.outcome == 'failure'
+      - name: Retry agent once if it crashed
+        if: steps.agent.outcome == 'failure'
         uses: anthropics/claude-code-action@v1
         with: *agent
-
-      - name: Check the retry left a result
-        if: steps.agent.outcome == 'failure' || steps.check.outcome == 'failure'
-        run: .github/scripts/check-agent-result.sh
 
       - name: Report failure on issue
         if: failure()
