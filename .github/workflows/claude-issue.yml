@@ -112,7 +112,7 @@ jobs:
             3. Make the change as described in "Making a change" in CLAUDE.md.
             4. Commit with a message like `<summary> (#${{ env.ISSUE_NUMBER }})`, push with
                `git push -u origin HEAD`, and open a PR with `gh pr create --base main`.
-               PR body: summary, `Closes #${{ env.ISSUE_NUMBER }}`, test results, the reviewer's
+               PR body: summary, `Closes #${{ env.ISSUE_NUMBER }}`, test results, the review's
                final verdict, and any unresolved non-blocking notes. If a PR for this branch
                already exists, push only and comment on it instead.
             5. Comment on the issue with the PR link. If you could not reach passing checks or

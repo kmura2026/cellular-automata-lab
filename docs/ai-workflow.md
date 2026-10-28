@@ -10,7 +10,7 @@ flowchart TD
     E --> D[2. implementer: src/]
     D --> F[Local lint + tests]
     F -- fail, up to 3x --> E & D
-    F -- pass --> G[3. reviewer]
+    F -- pass --> G[3. reviewer-* subagents]
     G -- REQUEST_CHANGES, up to 2x --> E & D
     G -- APPROVE --> H[Push branch claude/issue-N, open PR]
     H --> I[CI]
@@ -23,17 +23,19 @@ flowchart TD
 |---|---|
 | `.github/workflows/claude-issue.yml` | Runs on new issues, or manually (Actions → *Claude – handle issue* → enter issue number). |
 | `.github/workflows/ci.yml` | Lint (biome), typecheck (tsc) and tests (vitest) on Node 22, 24 and 26. |
-| `.github/workflows/claude-review.yml` | Agent review of every PR; fails the check on fatal issues. |
+| `.github/workflows/claude-review.yml` | Runs all reviewers on every PR, posts one combined comment; fails the check on blocking issues. |
 | `.claude/agents/implementer.md` | Subagent: edits production code only. |
 | `.claude/agents/test-writer.md` | Subagent: edits tests only. |
-| `.claude/agents/reviewer.md` | Subagent: read-only review, returns APPROVE / REQUEST_CHANGES. |
+| `.claude/agents/reviewer-*.md` | Subagents: read-only review, one per aspect (correctness, security, performance, maintainability, cost); each returns APPROVE / REQUEST_CHANGES. |
+| `.claude/review-rules.md` | Rules and report format shared by all reviewers. |
 | `CLAUDE.md` | Project rules every agent reads. |
 
 ## Subagent order
 Subagents run one at a time: `test-writer` writes tests from the issue first, `implementer` then
-makes them pass, and `reviewer` checks the result last. Fixes follow the same order: test changes
-before code changes, then review again. (A fix goes to whichever of the two owns
-the broken file, starting with `test-writer` when both do.)
+makes them pass, and the `reviewer-*` subagents check the result last, one after another.
+Fixes follow the same order: test changes before code changes, then review again, re-running only
+the reviewers that requested changes. (A fix goes to whichever of the two owns the broken file,
+starting with `test-writer` when both do.)
 
 ## Retries
 - **Inside a run:** failing local checks go back to the responsible subagent (3 rounds); blocking review findings go back too (2 rounds).
