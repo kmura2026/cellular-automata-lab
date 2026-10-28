@@ -20,6 +20,9 @@ CI (`.github/workflows/ci.yml`) runs exactly these. A change is done only when a
 - Throw `RangeError` for invalid arguments.
 - Keep it simple (KISS), in code and in automation (`.github/`, `.claude/`). Choose the simplest
   solution that works; add scripts, steps or abstractions only when they prevent a concrete problem.
+- Don't repeat yourself (DRY), in code and in automation. State each rule or procedure in one place
+  and refer to it from elsewhere, so copies cannot drift apart (e.g. both agent workflows follow
+  "Making a change" below instead of each spelling it out).
 
 ## AI-driven workflow
 Issues are handled by GitHub Actions (`.github/workflows/claude-issue.yml`). The orchestrating
@@ -28,8 +31,24 @@ agent delegates to three subagents in `.claude/agents/`:
 - `test-writer` – edits `tests/` only
 - `reviewer` – read-only review of the diff
 
-They run one after another in this order: `test-writer` writes the tests first, then
-`implementer` makes them pass, then `reviewer` reviews the result.
+### Making a change
+Both `claude-issue.yml` (new issues) and `claude-ci-fix.yml` (failed checks) change code this way.
+The orchestrator never edits files itself. Subagents run one after another in the foreground,
+never in parallel: wait for each result, and never end the turn while one is still running.
+1. `test-writer` – give it the issue number, the concrete acceptance criteria and the intended
+   public API (names and signatures). New tests for new behavior are expected to fail at first.
+   A correct test is never deleted or weakened to make it pass.
+2. `implementer` – give it the same, plus the test-writer's report. It makes the tests pass
+   without editing them.
+3. Verify: `npm run lint && npm run typecheck && npm test`. If anything fails, send the output to
+   the subagent that owns the broken file and verify again. Up to 3 rounds.
+4. `reviewer` – only after step 3 passes. If it returns REQUEST_CHANGES, route each BLOCKING item
+   to its owner (`test-writer` first when both need changes), then repeat steps 3 and 4.
+   Up to 2 review rounds.
+
+Skip `test-writer` or `implementer` only when its side needs no change (e.g. docs only, or a fix
+to a wrong test). Ownership is never a reason to stop; only changes to `.github/` or `.claude/`
+need a human.
 
 The agent posts, pushes and opens PRs with a GitHub App token (secrets `APP_ID` and
 `APP_PRIVATE_KEY`), so its work shows up as `<app>[bot]`. Every comment it posts also starts

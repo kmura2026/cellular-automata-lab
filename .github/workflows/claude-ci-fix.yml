@@ -138,8 +138,6 @@ jobs:
             The `${{ env.FAILED_WORKFLOW }}` check failed on branch `${{ env.BRANCH }}`
             (PR #${{ steps.pr.outputs.number }}).
             This is automatic fix attempt ${{ steps.pr.outputs.attempt }} of ${{ env.MAX_ATTEMPTS }}.
-            Run subagents in the foreground and wait for each result; never end your turn while one
-            is still running.
             Follow CLAUDE.md. Start every comment you post with `🤖 **Claude agent**` on its own line.
 
             1. Find the cause. Read the PR with `gh pr view ${{ steps.pr.outputs.number }} --comments`
@@ -151,14 +149,9 @@ jobs:
                  They are under "### Issues" in `${{ runner.temp }}/ci/review.md`. Fix each one
                  that is correct. If you are sure an item is wrong, do not change the code for it;
                  explain why in your PR comment.
-            2. Decide which side is wrong. Do not edit files yourself:
-               - anything outside tests/ (src/, README.md, docs/, config) -> `implementer`
-               - wrong or flaky test -> `test-writer` (never just delete or weaken a correct test)
-               If both sides need changes, run `test-writer` first, then `implementer`, one after
-               the other (never in parallel).
-            3. Verify locally until all checks pass (up to 3 rounds).
-            4. Only after the fix passes locally, ask `reviewer` to check it. Address BLOCKING items (1 round).
-            5. Commit (`fix CI: <summary>`) and `git push`. Do not force-push.
-            6. Comment on the PR: cause of the failure and what changed (for a review failure,
+            2. Fix it as described in "Making a change" in CLAUDE.md. Decide which side is wrong:
+               a wrong or flaky test goes to `test-writer`, anything else to `implementer`.
+            3. Commit (`fix CI: <summary>`) and `git push`. Do not force-push.
+            4. Comment on the PR: cause of the failure and what changed (for a review failure,
                list each review issue and whether it was fixed or why not).
                If you could not find a fix, say so and stop without pushing.
