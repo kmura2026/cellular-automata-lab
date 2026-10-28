@@ -33,13 +33,15 @@ concurrency:
 
 jobs:
   # Decides whether an automatic run should fix. Manual runs always do.
+  # Automatic runs check every completed run, not only failures: if CI fails and the review then
+  # passes, only the review's completion sees all checks done.
   gate:
     if: >-
       github.event_name == 'workflow_dispatch' ||
-      (github.event.workflow_run.conclusion == 'failure' &&
-       github.event.workflow_run.event == 'pull_request' &&
+      (github.event.workflow_run.event == 'pull_request' &&
        github.event.workflow_run.head_repository.full_name == github.repository)
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     permissions:
       checks: read
       pull-requests: read
@@ -54,8 +56,8 @@ jobs:
           app-id: ${{ secrets.APP_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
 
-      # Fix only the PR's latest commit, once all its checks are done, once per commit and at
-      # most MAX_ATTEMPTS times per PR. Attempts are counted by the comment posted here.
+      # Fix only the PR's latest commit, once all its checks are done and one failed, once per
+      # commit and at most MAX_ATTEMPTS times per PR. Attempts are counted by the comment posted here.
       - name: Decide
         id: decide
         env:
@@ -63,7 +65,6 @@ jobs:
           GH_REPO: ${{ github.repository }}
           APP_TOKEN: ${{ steps.app-token.outputs.token }}
           HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
-          FAILED: ${{ github.event.workflow_run.name }}
           MAX_ATTEMPTS: "2"
         run: |
           if [ "$GITHUB_EVENT_NAME" = workflow_dispatch ]; then
@@ -73,22 +74,28 @@ jobs:
           if [ "$head" != "$HEAD_SHA" ]; then
             echo "PR has newer commits; skipping"; exit 0
           fi
-          if gh pr checks "$PR_NUMBER" --json bucket -q '.[].bucket' | grep -qx pending; then
-            echo "Other checks still running; the last one to fail starts the fix"; exit 0
+          buckets=$(gh pr checks "$PR_NUMBER" --json name,bucket)
+          if jq -e 'any(.[]; .bucket == "pending")' <<<"$buckets" >/dev/null; then
+            echo "Other checks still running; the last one to finish decides"; exit 0
           fi
+          failed=$(jq -r '[.[] | select(.bucket == "fail") | .name] | join(", ")' <<<"$buckets")
+          if [ -z "$failed" ]; then
+            echo "No check failed"; exit 0
+          fi
+          # Match loosely (any line ending), so a changed body cannot disable the cap.
           attempts=$(gh pr view "$PR_NUMBER" --json comments \
-            -q '[.comments[].body | select(startswith("🤖 **Claude agent**\nAuto-fix attempt "))]')
+            -q '[.comments[].body | select(contains("\nAuto-fix attempt "))]')
           if jq -e --arg sha "$HEAD_SHA" 'any(.[]; contains($sha))' <<<"$attempts" >/dev/null; then
             echo "Already attempted for $HEAD_SHA; skipping"; exit 0
           fi
           count=$(jq length <<<"$attempts")
           if [ "$count" -ge "$MAX_ATTEMPTS" ]; then
             GH_TOKEN="$APP_TOKEN" gh pr comment "$PR_NUMBER" --body "🤖 **Claude agent**
-          Auto-fix stopped after $MAX_ATTEMPTS attempts; $FAILED still fails. A human takes over."
+          Auto-fix stopped after $MAX_ATTEMPTS attempts; still failing: $failed. A human takes over."
             exit 0
           fi
           GH_TOKEN="$APP_TOKEN" gh pr comment "$PR_NUMBER" --body "🤖 **Claude agent**
-          Auto-fix attempt $((count + 1))/$MAX_ATTEMPTS for $HEAD_SHA ($FAILED failed)."
+          Auto-fix attempt $((count + 1))/$MAX_ATTEMPTS for $HEAD_SHA (failed: $failed)."
           echo "fix=true" >> "$GITHUB_OUTPUT"
 
   fix:
