@@ -101,11 +101,7 @@ jobs:
             - Start every issue or PR comment you post with `🤖 **Claude agent**` on its own line.
             - Never finish without either opening/updating a PR or posting an issue comment.
               If you are blocked for any reason, comment on the issue explaining why.
-            - Subagents must run in the foreground: wait for each subagent's result before your next
-              step, and never end your turn while a subagent is still running.
-            - Ownership is never a reason to stop: `implementer` handles every file outside
-              `tests/`, `.github/` and `.claude/`. Only changes to `.github/` or `.claude/`
-              need a human; say so in an issue comment.
+            - If the change needs `.github/` or `.claude/` edits, say so in an issue comment.
 
             1. Triage. Read the issue with `gh issue view ${{ env.ISSUE_NUMBER }} --comments`
                and read the code. Decide:
@@ -115,28 +111,13 @@ jobs:
                - CHANGE needed -> continue.
             2. Branch: `git switch -c claude/issue-${{ env.ISSUE_NUMBER }}`
                (if it already exists on origin, switch to it and continue from there).
-            3. Delegate. Do not edit files yourself. Run the subagents one after another, in
-               this order, never in parallel:
-               a. `test-writer` (files in tests/): give it the issue number, the concrete
-                  acceptance criteria and the intended public API (names and signatures).
-                  It writes tests first; for new or changed behavior they are expected to fail.
-               b. `implementer` (everything else: src/, README.md, docs/, package.json, ...):
-                  give it the same issue number, acceptance criteria and API, plus the
-                  test-writer's report. It makes the new tests pass without editing them.
-               Skip `test-writer` only if the change has no testable behavior (e.g. docs only).
-            4. Verify locally: `npm run lint && npm run typecheck && npm test`.
-               If anything fails, send the output to the subagent that owns the broken file
-               and verify again. Up to 3 rounds.
-            5. Review: only after steps 3 and 4, ask the `reviewer` subagent. If it returns
-               REQUEST_CHANGES, route each BLOCKING item to its owner (`test-writer` first when
-               both need changes, then `implementer`), re-verify (step 4), and ask for review
-               again. Up to 2 review rounds.
-            6. Commit with a message like `<summary> (#${{ env.ISSUE_NUMBER }})`, push with
+            3. Make the change as described in "Making a change" in CLAUDE.md.
+            4. Commit with a message like `<summary> (#${{ env.ISSUE_NUMBER }})`, push with
                `git push -u origin HEAD`, and open a PR with `gh pr create --base main`.
                PR body: summary, `Closes #${{ env.ISSUE_NUMBER }}`, test results, the reviewer's
                final verdict, and any unresolved non-blocking notes. If a PR for this branch
                already exists, push only and comment on it instead.
-            7. Comment on the issue with the PR link. If you could not reach passing checks or
+            5. Comment on the issue with the PR link. If you could not reach passing checks or
                an APPROVE verdict, still open the PR as a draft (`--draft`) and explain what is left.
 
       - name: Retry agent once if it crashed
