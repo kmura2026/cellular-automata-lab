@@ -27,11 +27,12 @@ CI (`.github/workflows/ci.yml`) runs exactly these. A change is done only when a
 ## AI-driven workflow
 Issues are handled by GitHub Actions (`.github/workflows/claude-issue.yml`). PRs with failed checks
 (CI or review) can be fixed by running `.github/workflows/claude-fix-pr.yml` manually with the PR
-number; it pushes to the PR branch. In both, the orchestrating agent delegates to three subagents
+number; it pushes to the PR branch. In both, the orchestrating agent delegates to subagents
 in `.claude/agents/`:
 - `implementer` – edits everything except `tests/`, `.github/` and `.claude/` (src, README, docs, config)
 - `test-writer` – edits `tests/` only
-- `reviewer` – read-only review of the diff
+- `reviewer-<aspect>` – read-only review of the diff, one subagent per aspect (correctness,
+  security, performance, maintainability, cost); shared rules in `.claude/review-rules.md`
 
 ### Making a change
 `claude-issue.yml` and `claude-fix-pr.yml` change code this way.
@@ -44,13 +45,21 @@ never in parallel: wait for each result, and never end the turn while one is sti
    without editing them.
 3. Verify: `npm run lint && npm run typecheck && npm test`. If anything fails, send the output to
    the subagent that owns the broken file and verify again. Up to 3 rounds.
-4. `reviewer` – only after step 3 passes. If it returns REQUEST_CHANGES, route each BLOCKING item
-   to its owner (`test-writer` first when both need changes), then repeat steps 3 and 4.
+4. Review as described in "Reviewing" below, only after step 3 passes. If it returns
+   REQUEST_CHANGES, route each BLOCKING item to its owner (`test-writer` first when both need
+   changes), then repeat step 3 and re-run only the reviewers that requested changes.
    Up to 2 review rounds.
 
 Skip `test-writer` or `implementer` only when its side needs no change (e.g. docs only, or a fix
 to a wrong test). Ownership is never a reason to stop; only changes to `.github/` or `.claude/`
 need a human.
+
+### Reviewing
+"Making a change" and `claude-review.yml` review this way.
+Run every `reviewer-*` subagent (`ls .claude/agents/reviewer-*.md`), one after another, giving
+each the issue or PR number and the diff command if it is not the default. The review is
+REQUEST_CHANGES if any reviewer returns REQUEST_CHANGES or no report in the format of
+`.claude/review-rules.md`; otherwise APPROVE. Adding an aspect means adding one agent file.
 
 The agent posts, pushes and opens PRs with a GitHub App token (secrets `APP_ID` and
 `APP_PRIVATE_KEY`), so its work shows up as `<app>[bot]`. Every comment it posts also starts
@@ -61,7 +70,7 @@ or the PR if it has none.
 There are no automatic retries: if the agent run or a check on its PR fails, a human takes over
 (for example by running `claude-fix-pr.yml` on the PR).
 
-Every PR from this repository is also reviewed by an agent (`.github/workflows/claude-review.yml`).
-It reports only fatal issues (bugs, missing requirements, security problems, tests that don't test
-what they claim); style and refactoring are left for after merge. Each run posts a new review comment
-(old ones stay as history): any issue fails the check, and a clean review posts "No issues found".
+Every PR from this repository is also reviewed by an agent (`.github/workflows/claude-review.yml`)
+as described in "Reviewing". Only BLOCKING issues are reported; style and refactoring are left for
+after merge. Each run posts one new review comment combining all aspects (old ones stay as
+history): any issue fails the check, and a clean review posts "No issues found".

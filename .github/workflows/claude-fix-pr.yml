@@ -109,7 +109,7 @@ jobs:
                acceptance criteria; the original requirements are those of the PR and its issue.
             3. Commit with a message like `Fix <summary> (#<issue>)`, using the issue the PR
                closes, or the PR number if there is none, and push with `git push`.
-            4. Comment on the PR: what failed, what you changed, test results and the reviewer's
+            4. Comment on the PR: what failed, what you changed, test results and the review's
                final verdict. If you could not reach passing checks or an APPROVE verdict,
                explain what is left.
 
