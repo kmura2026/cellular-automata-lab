@@ -25,14 +25,16 @@ CI (`.github/workflows/ci.yml`) runs exactly these. A change is done only when a
   "Making a change" below instead of each spelling it out).
 
 ## AI-driven workflow
-Issues are handled by GitHub Actions (`.github/workflows/claude-issue.yml`). The orchestrating
-agent delegates to three subagents in `.claude/agents/`:
+Issues are handled by GitHub Actions (`.github/workflows/claude-issue.yml`). PRs with failed checks
+(CI or review) can be fixed by running `.github/workflows/claude-fix-pr.yml` manually with the PR
+number; it pushes to the PR branch. In both, the orchestrating agent delegates to three subagents
+in `.claude/agents/`:
 - `implementer` – edits everything except `tests/`, `.github/` and `.claude/` (src, README, docs, config)
 - `test-writer` – edits `tests/` only
 - `reviewer` – read-only review of the diff
 
 ### Making a change
-`claude-issue.yml` changes code this way.
+`claude-issue.yml` and `claude-fix-pr.yml` change code this way.
 The orchestrator never edits files itself. Subagents run one after another in the foreground,
 never in parallel: wait for each result, and never end the turn while one is still running.
 1. `test-writer` – give it the issue number, the concrete acceptance criteria and the intended
@@ -54,8 +56,10 @@ The agent posts, pushes and opens PRs with a GitHub App token (secrets `APP_ID` 
 `APP_PRIVATE_KEY`), so its work shows up as `<app>[bot]`. Every comment it posts also starts
 with `🤖 **Claude agent**`.
 
-Branches are named `claude/issue-<number>`. Commit messages reference the issue (`#<number>`).
-There are no automatic retries: if the agent run or a check on its PR fails, a human takes over.
+Branches are named `claude/issue-<number>`. Commit messages reference the issue (`#<number>`),
+or the PR if it has none.
+There are no automatic retries: if the agent run or a check on its PR fails, a human takes over
+(for example by running `claude-fix-pr.yml` on the PR).
 
 Every PR from this repository is also reviewed by an agent (`.github/workflows/claude-review.yml`).
 It reports only fatal issues (bugs, missing requirements, security problems, tests that don't test
