@@ -18,6 +18,8 @@ CI (`.github/workflows/ci.yml`) runs exactly these. A change is done only when a
 - Node 22.12+, strict TypeScript, ESM; relative imports use `.js` extensions. Types on public functions, short doc comments.
 - Cells are `number` 0/1 unless an issue says otherwise. Grids wrap around (toroidal) by default.
 - Throw `RangeError` for invalid arguments.
+- Keep it simple (KISS), in code and in automation (`.github/`, `.claude/`). Choose the simplest
+  solution that works; add scripts, steps or abstractions only when they prevent a concrete problem.
 
 ## AI-driven workflow
 Issues are handled by GitHub Actions (`.github/workflows/claude-issue.yml`). The orchestrating
