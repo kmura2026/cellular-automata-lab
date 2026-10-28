@@ -32,7 +32,7 @@ agent delegates to three subagents in `.claude/agents/`:
 - `reviewer` – read-only review of the diff
 
 ### Making a change
-Both `claude-issue.yml` (new issues) and `claude-ci-fix.yml` (failed checks) change code this way.
+`claude-issue.yml` changes code this way.
 The orchestrator never edits files itself. Subagents run one after another in the foreground,
 never in parallel: wait for each result, and never end the turn while one is still running.
 1. `test-writer` – give it the issue number, the concrete acceptance criteria and the intended
@@ -55,11 +55,9 @@ The agent posts, pushes and opens PRs with a GitHub App token (secrets `APP_ID` 
 with `🤖 **Claude agent**`.
 
 Branches are named `claude/issue-<number>`. Commit messages reference the issue (`#<number>`).
-If CI fails on a `claude/` branch, `.github/workflows/claude-ci-fix.yml` retries automatically
-(limited attempts) and labels the PR `needs-human` when it gives up.
+There are no automatic retries: if the agent run or a check on its PR fails, a human takes over.
 
 Every PR from this repository is also reviewed by an agent (`.github/workflows/claude-review.yml`).
 It reports only fatal issues (bugs, missing requirements, security problems, tests that don't test
 what they claim); style and refactoring are left for after merge. Each run posts a new review comment
 (old ones stay as history): any issue fails the check, and a clean review posts "No issues found".
-A failed review on a `claude/` branch also starts `claude-ci-fix.yml`, sharing the same attempt limit.
