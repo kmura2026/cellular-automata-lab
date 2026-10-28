@@ -26,8 +26,9 @@ CI (`.github/workflows/ci.yml`) runs exactly these. A change is done only when a
 
 ## AI-driven workflow
 Issues are handled by GitHub Actions (`.github/workflows/claude-issue.yml`). PRs with failed checks
-(CI or review) can be fixed by running `.github/workflows/claude-fix-pr.yml` manually with the PR
-number; it pushes to the PR branch. In both, the orchestrating agent delegates to subagents
+(CI or review) are fixed by `.github/workflows/claude-fix-pr.yml`, which pushes to the PR branch:
+automatically on PRs from this repository (at most 2 attempts per PR), or manually with the PR
+number. In both, the orchestrating agent delegates to subagents
 in `.claude/agents/`:
 - `implementer` – edits everything except `tests/`, `.github/` and `.claude/` (src, README, docs, config)
 - `test-writer` – edits `tests/` only
@@ -67,8 +68,9 @@ with `🤖 **Claude agent**`.
 
 Branches are named `claude/issue-<number>`. Commit messages reference the issue (`#<number>`),
 or the PR if it has none.
-There are no automatic retries: if the agent run or a check on its PR fails, a human takes over
-(for example by running `claude-fix-pr.yml` on the PR).
+Failed checks on PRs get the automatic fix attempts above; there are no other retries. If an
+agent run fails, or checks still fail after the last attempt, a human takes over (for example by
+running `claude-fix-pr.yml` manually).
 
 Every PR from this repository is also reviewed by an agent (`.github/workflows/claude-review.yml`)
 as described in "Reviewing". Only BLOCKING issues are reported; style and refactoring are left for
