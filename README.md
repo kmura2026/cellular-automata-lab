@@ -23,6 +23,14 @@ npm start
 Then open http://localhost:3000 (set `PORT` to use another port). Pick a rule, width and number of
 steps, and press Draw.
 
+Browser tests (`tests/browser/`, Playwright) open the page of a server that is already running.
+With `npm start` running in another terminal:
+
+```sh
+npx playwright install chromium   # once
+npm run test:browser              # set BASE_URL to test another address
+```
+
 Extending it: the page in `web/` only talks to `GET /api/run` (`src/server.ts`), so a future
 backend can add endpoints there without changing how the page works. `npm start` builds first and
 has no runtime dependencies, so a deployment can run the same command, or

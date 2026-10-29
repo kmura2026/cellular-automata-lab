@@ -31,3 +31,28 @@ jobs:
         run: npm run typecheck
       - name: Test
         run: npm test
+
+  browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      BASE_URL: http://localhost:3000
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: npm
+      - run: npm ci
+      - uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+      # Downloads Chromium only on a cache miss; system packages are installed every time.
+      - run: npx playwright install --with-deps chromium
+      - name: Start server
+        run: npm start &
+      - name: Wait for server
+        run: curl -sf --retry 30 --retry-connrefused --retry-delay 1 -o /dev/null "$BASE_URL/"
+      - name: Browser tests
+        run: npm run test:browser

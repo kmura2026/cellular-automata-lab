@@ -4,15 +4,18 @@ TypeScript library (ESM only) for experimenting with cellular automata.
 
 ## Layout
 - `src/` – production code (no runtime dependencies unless an issue asks for one); `src/index.ts` re-exports the public API
-- `tests/` – vitest tests, one `<module>.test.ts` per module
+- `tests/` – vitest tests, one `<module>.test.ts` per module; `tests/browser/` – Playwright tests of the web demo
 
 ## Commands
 - Install: `npm ci`
 - Lint: `npm run lint`
 - Typecheck: `npm run typecheck`
 - Test: `npm test`
+- Browser tests: `npm run test:browser` (Playwright, `tests/browser/`; needs a server already
+  running at `BASE_URL`, default http://localhost:3000)
 
 CI (`.github/workflows/ci.yml`) runs exactly these. A change is done only when all pass.
+Agents skip browser tests for now (they are slow); CI runs them.
 
 ## Conventions
 - Node 22.12+, strict TypeScript, ESM; relative imports use `.js` extensions. Types on public functions, short doc comments.
