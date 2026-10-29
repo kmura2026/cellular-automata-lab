@@ -2,6 +2,14 @@
   "$schema": "./node_modules/@biomejs/biome/configuration_schema.json",
   "formatter": { "indentStyle": "space", "indentWidth": 2, "lineWidth": 100 },
   "files": {
-    "includes": ["**", "!node_modules", "!dist", "!package-lock.json", "!**/*.md"]
+    "includes": [
+      "**",
+      "!node_modules",
+      "!dist",
+      "!web/elementary.js",
+      "!web/pattern.js",
+      "!package-lock.json",
+      "!**/*.md"
+    ]
   }
 }
