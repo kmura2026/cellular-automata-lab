@@ -13,9 +13,9 @@ for (const row of run(start, 90, 8)) {
 
 ## Web demo
 
-The demo draws a pattern row by row, here rule 30:
+The demo draws a whole pattern at once. This capture of the live page shows rules 30, 90, 110 and 150 drawn in turn:
 
-![Animation of the web demo drawing rule 30 row by row](docs/demo.gif)
+![Capture of the web demo drawing rules 30, 90, 110 and 150 in turn, each pattern appearing at once](docs/demo.gif)
 
 A small demo runs on your own computer (Node 22.12+):
 
