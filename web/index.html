@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Cellular automata demo</title>
+    <style>
+      body { font-family: sans-serif; max-width: 48rem; margin: 2rem auto; padding: 0 1rem; }
+      label { display: block; margin: 0.6rem 0; }
+      input { width: 6rem; }
+      canvas { border: 1px solid #888; image-rendering: pixelated; max-width: 100%; }
+      #message { color: #b00020; min-height: 1.5em; }
+    </style>
+  </head>
+  <body>
+    <h1>Cellular automata demo</h1>
+    <p>
+      Start with a single black cell in the middle. Each new row (going down) is made from the row
+      above by a simple rule. Change the numbers and press Draw to see different patterns.
+    </p>
+    <form id="form">
+      <label>Rule (0 to 255, try 30, 90 or 110)
+        <input id="rule" type="number" min="0" max="255" value="30" />
+      </label>
+      <label>Width in cells (1 to 1000)
+        <input id="width" type="number" min="1" max="1000" value="63" />
+      </label>
+      <label>Number of steps (0 to 1000)
+        <input id="generations" type="number" min="0" max="1000" value="31" />
+      </label>
+      <button type="submit">Draw</button>
+    </form>
+    <p id="message"></p>
+    <canvas id="canvas" width="1" height="1"></canvas>
+    <script src="/app.js"></script>
+  </body>
+</html>
