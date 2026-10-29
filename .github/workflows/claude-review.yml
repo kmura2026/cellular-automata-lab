@@ -89,6 +89,13 @@ jobs:
                One bullet per BLOCKING item from any reviewer; leave out `:12` if no single line
                applies. A reviewer with no valid report gets the bullet
                `- **<aspect>** reviewer gave no result`.
+
+               If any reviewer gave ANSWERS, append to either form:
+
+               ### Answers
+               - @<author>: <question, shortened> → <combined answer from all aspects>
+
+               One bullet per maintainer question. Answers alone do not count as issues.
             3. Return `fatal_issues`: true if you listed any issue, false otherwise.
 
       - name: Fail if fatal issues were found
