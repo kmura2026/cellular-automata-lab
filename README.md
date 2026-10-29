@@ -15,7 +15,7 @@ for (const row of run(start, 90, 8)) {
 
 The demo draws a pattern row by row, here rule 30:
 
-![Web demo drawing rule 30](docs/demo.png)
+![Animation of the web demo drawing rule 30 row by row](docs/demo.gif)
 
 A small demo runs on your own computer (Node 22.12+):
 
