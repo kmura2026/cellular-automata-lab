@@ -29,9 +29,10 @@ Agents skip browser tests for now (they are slow); CI runs them.
 
 ## AI-driven workflow
 Issues are handled by GitHub Actions (`.github/workflows/claude-issue.yml`). PRs with failed checks
-(CI or review) are fixed by `.github/workflows/claude-fix-pr.yml`, which pushes to the PR branch:
-automatically on PRs from this repository (at most 2 attempts per PR), or manually with the PR
-number. In both, the orchestrating agent delegates to subagents
+(CI or review) or merge conflicts are fixed by `.github/workflows/claude-fix-pr.yml`, which pushes
+to the PR branch (merging the base branch to resolve conflicts): automatically when a check fails
+on a PR from this repository (at most 2 attempts per PR), or manually with the PR number (needed
+for conflicts, since a conflicting PR runs no checks). In both, the orchestrating agent delegates to subagents
 in `.claude/agents/`:
 - `implementer` – edits everything except `tests/`, `.github/` and `.claude/` (src, README, docs, config)
 - `test-writer` – edits `tests/` only
