@@ -24,8 +24,8 @@ npm ci
 npm start
 ```
 
-Then open http://localhost:3000 (set `PORT` to use another port). Pick a rule, width and number of
-steps, and press Draw.
+Then open http://localhost:8787 (`npm start -- --port 3000` uses another port). Pick a rule,
+width and number of steps, and press Draw.
 
 Browser tests (`tests/browser/`, Playwright) open the page of a server that is already running.
 With `npm start` running in another terminal:
@@ -37,17 +37,17 @@ npm run test:browser              # set BASE_URL to test another address
 
 The page is static: the browser computes the pattern (`src/pattern.ts`) and there is no backend.
 `npm run build:site` compiles the two modules to `web/elementary.js` and `web/pattern.js`; `web/`
-can then be deployed to any static host. `npm start` runs that build and a small static server.
+can then be deployed to any static host. `npm start` runs that build and serves `web/` locally with
+wrangler, the same way Cloudflare serves it (needs no Cloudflare account).
 
 ## Cloudflare deployment
 
 The demo can be deployed to Cloudflare, which serves `web/` as static assets (`wrangler.jsonc`).
 `npm run cf:deploy` publishes only these static assets; there is no Worker or server code.
-Both commands run `npm run build:site` first.
+It runs `npm run build:site` first.
 
 ```sh
 npm ci
-npm run cf:dev      # local run, needs no Cloudflare account
 npm run cf:deploy   # deploy; run `npx wrangler login` first, or set CLOUDFLARE_API_TOKEN
 ```
 

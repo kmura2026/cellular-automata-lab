@@ -12,7 +12,7 @@ TypeScript library (ESM only) for experimenting with cellular automata.
 - Typecheck: `npm run typecheck`
 - Test: `npm test`
 - Browser tests: `npm run test:browser` (Playwright, `tests/browser/`; needs a server already
-  running at `BASE_URL`, default http://localhost:3000)
+  running at `BASE_URL`, default http://localhost:8787)
 
 CI (`.github/workflows/ci.yml`) runs exactly these. A change is done only when all pass.
 Agents skip browser tests for now (they are slow); CI runs them.

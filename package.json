@@ -13,11 +13,10 @@
     "lint": "biome check .",
     "format": "biome format --write .",
     "build:site": "tsc -p tsconfig.site.json",
-    "start": "npm run build && npm run build:site && node dist/src/main.js",
+    "start": "npm run build:site && wrangler dev",
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
     "test:browser": "playwright test",
-    "cf:dev": "npm run build:site && wrangler dev",
     "cf:deploy": "npm run build:site && wrangler deploy"
   },
   "devDependencies": {
