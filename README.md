@@ -42,6 +42,7 @@ can then be deployed to any static host. `npm start` runs that build and a small
 ## Cloudflare deployment
 
 The demo can be deployed to Cloudflare, which serves `web/` as static assets (`wrangler.jsonc`).
+`npm run cf:deploy` publishes only these static assets; there is no Worker or server code.
 Both commands run `npm run build:site` first.
 
 ```sh
