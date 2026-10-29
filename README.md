@@ -13,6 +13,10 @@ for (const row of run(start, 90, 8)) {
 
 ## Web demo
 
+The demo draws a pattern row by row, here rule 30:
+
+![Web demo drawing rule 30](docs/demo.png)
+
 A small demo runs on your own computer (Node 22.12+):
 
 ```sh
