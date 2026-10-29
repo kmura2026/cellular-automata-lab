@@ -40,4 +40,15 @@ backend can add endpoints there without changing how the page works. `npm start`
 has no runtime dependencies, so a deployment can run the same command, or
 `node dist/src/main.js` after `npm run build`, with `PORT` set.
 
+## Cloudflare deployment
+
+The demo also runs as a Cloudflare Worker (`src/worker.ts`) that serves `web/` as static assets and
+`GET /api/run`; the configuration is `wrangler.jsonc`.
+
+```sh
+npm ci
+npm run cf:dev      # local run, needs no Cloudflare account
+npm run cf:deploy   # deploy; run `npx wrangler login` first, or set CLOUDFLARE_API_TOKEN
+```
+
 See [docs/ai-workflow.md](docs/ai-workflow.md) for how issues become pull requests.
