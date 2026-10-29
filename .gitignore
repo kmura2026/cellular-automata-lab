@@ -1,5 +1,6 @@
 node_modules/
 dist/
+.wrangler/
 web/elementary.js
 web/pattern.js
 *.egg-info/

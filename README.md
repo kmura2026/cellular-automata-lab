@@ -39,4 +39,16 @@ The page is static: the browser computes the pattern (`src/pattern.ts`) and ther
 `npm run build:site` compiles the two modules to `web/elementary.js` and `web/pattern.js`; `web/`
 can then be deployed to any static host. `npm start` runs that build and a small static server.
 
+## Cloudflare deployment
+
+The demo can be deployed to Cloudflare, which serves `web/` as static assets (`wrangler.jsonc`).
+`npm run cf:deploy` publishes only these static assets; there is no Worker or server code.
+Both commands run `npm run build:site` first.
+
+```sh
+npm ci
+npm run cf:dev      # local run, needs no Cloudflare account
+npm run cf:deploy   # deploy; run `npx wrangler login` first, or set CLOUDFLARE_API_TOKEN
+```
+
 See [docs/ai-workflow.md](docs/ai-workflow.md) for how issues become pull requests.
