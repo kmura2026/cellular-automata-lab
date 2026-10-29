@@ -4,6 +4,6 @@ import { defineConfig } from "@playwright/test";
 export default defineConfig({
   testDir: "tests/browser",
   forbidOnly: !!process.env.CI,
-  use: { baseURL: process.env.BASE_URL ?? "http://localhost:3000" },
+  use: { baseURL: process.env.BASE_URL ?? "http://localhost:8787" },
   projects: [{ name: "chromium", use: { browserName: "chromium" } }],
 });
