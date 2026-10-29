@@ -12,12 +12,13 @@
     "build": "tsc",
     "lint": "biome check .",
     "format": "biome format --write .",
-    "start": "npm run build && node dist/src/main.js",
+    "build:site": "tsc -p tsconfig.site.json",
+    "start": "npm run build && npm run build:site && node dist/src/main.js",
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
     "test:browser": "playwright test",
-    "cf:dev": "wrangler dev",
-    "cf:deploy": "wrangler deploy"
+    "cf:dev": "npm run build:site && wrangler dev",
+    "cf:deploy": "npm run build:site && wrangler deploy"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.6.3",

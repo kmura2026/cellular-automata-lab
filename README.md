@@ -35,15 +35,14 @@ npx playwright install chromium   # once
 npm run test:browser              # set BASE_URL to test another address
 ```
 
-Extending it: the page in `web/` only talks to `GET /api/run` (`src/server.ts`), so a future
-backend can add endpoints there without changing how the page works. `npm start` builds first and
-has no runtime dependencies, so a deployment can run the same command, or
-`node dist/src/main.js` after `npm run build`, with `PORT` set.
+The page is static: the browser computes the pattern (`src/pattern.ts`) and there is no backend.
+`npm run build:site` compiles the two modules to `web/elementary.js` and `web/pattern.js`; `web/`
+can then be deployed to any static host. `npm start` runs that build and a small static server.
 
 ## Cloudflare deployment
 
-The demo also runs as a Cloudflare Worker (`src/worker.ts`) that serves `web/` as static assets and
-`GET /api/run`; the configuration is `wrangler.jsonc`.
+The demo can be deployed to Cloudflare, which serves `web/` as static assets (`wrangler.jsonc`).
+Both commands run `npm run build:site` first.
 
 ```sh
 npm ci

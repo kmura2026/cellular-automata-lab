@@ -37,11 +37,11 @@ test("redraws with the entered rule, width and steps", async ({ page }) => {
   expect(await isBlack(page, 4, 1, 10)).toBe(true);
 });
 
-test("shows the server's error for an invalid value", async ({ page }) => {
+test("shows an error for an invalid value", async ({ page }) => {
   await page.goto("/");
   // Wait for the draw on load, so it cannot clear the message afterwards.
   await expect(page.locator("#canvas")).toHaveJSProperty("width", 630);
   await page.getByLabel("Width in cells").fill("");
   await page.getByRole("button", { name: "Draw" }).click();
-  await expect(page.locator("#message")).toContainText("width must be an integer");
+  await expect(page.locator("#message")).toContainText("width must be an integer from 1 to 1000");
 });
