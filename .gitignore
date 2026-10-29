@@ -1,5 +1,7 @@
 node_modules/
 dist/
+web/elementary.js
+web/pattern.js
 *.egg-info/
 test-results/
 playwright-report/

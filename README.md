@@ -35,9 +35,8 @@ npx playwright install chromium   # once
 npm run test:browser              # set BASE_URL to test another address
 ```
 
-Extending it: the page in `web/` only talks to `GET /api/run` (`src/server.ts`), so a future
-backend can add endpoints there without changing how the page works. `npm start` builds first and
-has no runtime dependencies, so a deployment can run the same command, or
-`node dist/src/main.js` after `npm run build`, with `PORT` set.
+The page is static: the browser computes the pattern (`src/pattern.ts`) and there is no backend.
+`npm run build:site` compiles the two modules to `web/elementary.js` and `web/pattern.js`; `web/`
+can then be deployed to any static host. `npm start` runs that build and a small static server.
 
 See [docs/ai-workflow.md](docs/ai-workflow.md) for how issues become pull requests.
