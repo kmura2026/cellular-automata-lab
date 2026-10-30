@@ -13,7 +13,7 @@ for (const row of run(start, 90, 8)) {
 
 ## Web demo
 
-The demo draws a whole pattern at once. This capture of the whole page (title, text, input form and canvas) shows how to use it: it presses Draw, then types rule 90 and rule 110 into the Rule field and presses Draw again each time to show the new pattern.
+The demo draws a pattern row by row (about 50 ms per row). This capture of the whole page (title, text, input form and canvas) shows how to use it: it presses Draw, then types rule 90 and rule 110 into the Rule field and presses Draw again each time to show the new pattern.
 
 ![Capture of the whole web demo page: the Rule field is changed to 90 and then 110, and Draw is pressed to show each new pattern on the canvas](docs/demo.gif)
 

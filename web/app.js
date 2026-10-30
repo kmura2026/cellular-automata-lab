@@ -11,6 +11,11 @@ function value(id) {
   return text === "" ? Number.NaN : Number(text);
 }
 
+/** Delay between rows, so the evolution can be watched. */
+const ROW_DELAY_MS = 50;
+/** Counts Draw presses; a running animation stops when it is no longer the latest. */
+let drawing = 0;
+
 function draw() {
   let rows;
   try {
@@ -27,11 +32,15 @@ function draw() {
   ctx.fillStyle = "#fff";
   ctx.fillRect(0, 0, canvas.width, canvas.height);
   ctx.fillStyle = "#000";
-  rows.forEach((row, y) => {
-    row.forEach((v, x) => {
+  const id = ++drawing;
+  const drawRow = (y) => {
+    if (id !== drawing || y >= rows.length) return;
+    rows[y].forEach((v, x) => {
       if (v) ctx.fillRect(x * cell, y * cell, cell, cell);
     });
-  });
+    setTimeout(drawRow, ROW_DELAY_MS, y + 1);
+  };
+  drawRow(0);
 }
 
 form.addEventListener("submit", (event) => {
