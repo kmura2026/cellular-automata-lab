@@ -13,9 +13,9 @@ for (const row of run(start, 90, 8)) {
 
 ## Web demo
 
-The demo draws a whole pattern at once. This capture of the live page shows rules 30, 90, 110 and 150 drawn in turn:
+The demo draws a whole pattern at once. This capture of the whole page (title, text, input form and canvas) shows how to use it: it presses Draw, then types rule 90 and rule 110 into the Rule field and presses Draw again each time to show the new pattern.
 
-![Capture of the web demo drawing rules 30, 90, 110 and 150 in turn, each pattern appearing at once](docs/demo.gif)
+![Capture of the whole web demo page: the Rule field is changed to 90 and then 110, and Draw is pressed to show each new pattern on the canvas](docs/demo.gif)
 
 A small demo runs on your own computer (Node 22.12+):
 
