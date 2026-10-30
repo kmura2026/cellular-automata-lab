@@ -51,4 +51,13 @@ npm ci
 npm run cf:deploy   # deploy; run `npx wrangler login` first, or set CLOUDFLARE_API_TOKEN
 ```
 
+On GitHub, a human deploys with the **Deploy** workflow (`.github/workflows/deploy.yml`, Actions →
+Deploy → Run workflow); it never runs on its own. Pick the branch under "Use workflow from".
+The run uses the GitHub environment `production`, or the one named by the repository variable
+`DEPLOY_ENVIRONMENT` if set (Settings → Secrets and variables → Actions → Variables); create that
+environment under Settings → Environments and give it two secrets:
+
+- `CLOUDFLARE_API_TOKEN` – an API token made from the "Edit Cloudflare Workers" template
+- `CLOUDFLARE_ACCOUNT_ID` – shown on the Workers & Pages overview in the Cloudflare dashboard
+
 See [docs/ai-workflow.md](docs/ai-workflow.md) for how issues become pull requests.
