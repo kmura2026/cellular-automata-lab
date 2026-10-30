@@ -67,9 +67,11 @@ test("drawing again mid-animation cancels the previous one", async ({ page }) =>
   await draw(page, "90", "7", "3");
   await expect(page.locator("#canvas")).toHaveJSProperty("width", 70);
   await expect(page.locator("#canvas")).toHaveJSProperty("height", 40);
-  // The cancelled rule 255 run would paint cell 3 of row 1 black.
   await expect.poll(() => isBlack(page, 2, 1, 10)).toBe(true);
-  await expect.poll(() => isBlack(page, 3, 3, 10)).toBe(false);
+  // Wait several row delays (about 50 ms each): a stale rule 255 run would paint
+  // black cells at (3, 1) and (3, 3) in that time. Rule 90 leaves both white.
+  await page.waitForTimeout(500);
+  expect(await isBlack(page, 3, 3, 10)).toBe(false);
   expect(await isBlack(page, 3, 1, 10)).toBe(false);
   expect(await isBlack(page, 4, 1, 10)).toBe(true);
 });
