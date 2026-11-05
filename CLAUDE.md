@@ -26,6 +26,8 @@ Agents skip browser tests for now (they are slow); CI runs them.
 - Don't repeat yourself (DRY), in code and in automation. State each rule or procedure in one place
   and refer to it from elsewhere, so copies cannot drift apart (e.g. both agent workflows follow
   "Making a change" below instead of each spelling it out).
+- One scope per PR, for people and agents alike: a PR does only what its issue asks. Put other
+  work, even a small related follow-up (e.g. a new script or tooling), in its own issue and PR.
 
 ## AI-driven workflow
 Issues are handled by GitHub Actions (`.github/workflows/claude-issue.yml`). PRs with failed checks
