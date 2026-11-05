@@ -4,6 +4,7 @@ TypeScript library (ESM only) for experimenting with cellular automata.
 
 ## Layout
 - `src/` – production code (no runtime dependencies unless an issue asks for one); `src/index.ts` re-exports the public API
+- `scripts/` – dev tooling (not published)
 - `tests/` – vitest tests, one `<module>.test.ts` per module; `tests/browser/` – Playwright tests of the web demo
 
 ## Commands
@@ -16,6 +17,9 @@ TypeScript library (ESM only) for experimenting with cellular automata.
 
 CI (`.github/workflows/ci.yml`) runs exactly these. A change is done only when all pass.
 Agents skip browser tests for now (they are slow); CI runs them.
+- Record the README demo: `npm run record:demo` (writes `docs/demo.gif`; installs Chromium if
+  needed and serves `web/` itself). `npm run record:demo -- <file>.png` saves a still image instead.
+  Update `scripts/record-demo.mjs` when the demo or what the capture should show changes.
 
 ## Conventions
 - Node 22.12+, strict TypeScript, ESM; relative imports use `.js` extensions. Types on public functions, short doc comments.
